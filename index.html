@@ -661,7 +661,9 @@ function advSuccess(fleet,enemy,role,sims){
 }
 function advLoss(r,role){
   const side=role==="attacker"?r.attacker:r.defender;
-  return side.rows.reduce((t,x)=>t+(ADVC[x.typeId]||0)*x.losses,0);
+  const parts=side.rows.filter(x=>x.losses>0).map(x=>"\u2212"+x.losses+" "+x.typeId.replace("missile_cruiser","MC").replace("torpedo_frigate","TF").replace("battleship","BS").replace("fighter","F").replace("cruiser","Cru").replace("interceptor","Int").replace("bomber","Bmb"));
+  const val=side.rows.reduce((t,x)=>t+(ADVC[x.typeId]||0)*x.losses,0);
+  return {parts:parts.length?parts.join(", "):"none", val};
 }
 async function advise(){
   const enemy={};
@@ -704,7 +706,8 @@ async function advise(){
       if(fin.ok>=conf){
         const cost=Object.entries(fleet).reduce((t,[k,n])=>t+(ADVC[k]||0)*n,0);
         const approx=Object.keys(fleet).some(k=>ADVFLAG[k]);
-        results.push({name,fleet,cost,approx,win:fin.ok,loss:advLoss(fin.r,role)});
+        const loss=advLoss(fin.r,role);
+        results.push({name,fleet,cost,approx,win:fin.ok,lossParts:loss.parts,lossVal:loss.val});
       }
     }
   }
@@ -718,7 +721,7 @@ async function advise(){
   out.innerHTML="<div class='tablewrap' style='max-width:1000px'><table><thead><tr><th></th><th>Composition</th><th>Fleet</th><th>Est. build cost</th><th>Win/hold</th><th>Your est. losses</th></tr></thead><tbody>"+
     results.map((x,i)=>"<tr"+(i===0?" class='advbest'":"")+"><td>"+(i+1)+"</td><td class='al'><b>"+esc(x.name)+"</b></td><td class='al'>"+
       Object.entries(x.fleet).map(([k,n])=>n+" "+k.replace("missile_cruiser","MC").replace("torpedo_frigate","TF").replace("battleship","BS")).join(" + ")+
-      "</td><td>"+(x.approx?"~":"")+fmt(Math.round(x.cost))+"</td><td>"+(x.win*100).toFixed(0)+"%</td><td>"+fmt(Math.round(x.loss))+"</td></tr>").join("")+
+      "</td><td>"+(x.approx?"~":"")+fmt(Math.round(x.cost))+"</td><td>"+(x.win*100).toFixed(0)+"%</td><td class='al'>"+x.lossParts+" <span style='color:var(--muted)'>(~"+fmt(Math.round(x.lossVal))+")</span></td></tr>").join("")+
     "</tbody></table></div>"+
     "<p class='sub' style='margin-top:10px'>Costs with ~ use placeholder prices for still-locked hulls. \u201cYour est. losses\u201d = the value of YOUR ships the model expects to lose — but observed battle reports suggest real fights often resolve all-or-nothing (clean win or full wipe), so treat losses as a planning buffer, not a bill you'll definitely pay. "+(role==="defender"?"Defender numbers assume you keep the field on a draw.":"Attacker fleets must fully wipe the defenders inside the round cap.")+"</p>";
 }

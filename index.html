@@ -715,12 +715,12 @@ async function advise(){
   }
   results.sort((a,b)=>a.cost-b.cost);
   st.textContent="Done \u2014 "+results.length+" viable counter(s), cheapest first. Sizes include your safety margin.";
-  out.innerHTML="<div class='tablewrap' style='max-width:1000px'><table><thead><tr><th></th><th>Composition</th><th>Fleet</th><th>Est. build cost</th><th>Win/hold</th><th>Avg losses</th></tr></thead><tbody>"+
+  out.innerHTML="<div class='tablewrap' style='max-width:1000px'><table><thead><tr><th></th><th>Composition</th><th>Fleet</th><th>Est. build cost</th><th>Win/hold</th><th>Your est. losses</th></tr></thead><tbody>"+
     results.map((x,i)=>"<tr"+(i===0?" class='advbest'":"")+"><td>"+(i+1)+"</td><td class='al'><b>"+esc(x.name)+"</b></td><td class='al'>"+
       Object.entries(x.fleet).map(([k,n])=>n+" "+k.replace("missile_cruiser","MC").replace("torpedo_frigate","TF").replace("battleship","BS")).join(" + ")+
       "</td><td>"+(x.approx?"~":"")+fmt(Math.round(x.cost))+"</td><td>"+(x.win*100).toFixed(0)+"%</td><td>"+fmt(Math.round(x.loss))+"</td></tr>").join("")+
     "</tbody></table></div>"+
-    "<p class='sub' style='margin-top:10px'>Costs with ~ use placeholder prices for still-locked hulls. Losses are model estimates. "+(role==="defender"?"Defender numbers assume you keep the field on a draw.":"Attacker fleets must fully wipe the defenders inside the round cap.")+"</p>";
+    "<p class='sub' style='margin-top:10px'>Costs with ~ use placeholder prices for still-locked hulls. \u201cYour est. losses\u201d = the value of YOUR ships the model expects to lose — but observed battle reports suggest real fights often resolve all-or-nothing (clean win or full wipe), so treat losses as a planning buffer, not a bill you'll definitely pay. "+(role==="defender"?"Defender numbers assume you keep the field on a draw.":"Attacker fleets must fully wipe the defenders inside the round cap.")+"</p>";
 }
 document.getElementById("advGo").addEventListener("click",advise);
 function renderIntel(){

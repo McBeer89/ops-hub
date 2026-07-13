@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>BTC Ops Hub — Nexus Legacy</title>
+<style>
+  :root{
+    --bg:#0A0E16; --panel:#111828; --panel2:#0E1420; --line:#1E2A3E;
+    --ink:#C7D3E4; --muted:#6B7A92; --accent:#E8A33D;
+    --good:#3FA97C; --good2:#2C7D5C; --mid:#7A7F4E; --warn:#A9793F; --bad:#C25248; --void:#2A2340; --voidink:#7A6FA8;
+    --chart:#C97F1D;
+    --mono:"Cascadia Code",Consolas,"SF Mono","Roboto Mono",monospace;
+    --sans:system-ui,"Segoe UI",Roboto,sans-serif;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#EDF0F5; --panel:#FFFFFF; --panel2:#F5F7FA; --line:#D4DBE6;
+      --ink:#1E2938; --muted:#5C6B80; --accent:#A9741F;
+      --good:#1F7D55; --good2:#3FA97C; --mid:#6E7239; --warn:#8A5F26; --bad:#A93B33; --void:#D9D4E8; --voidink:#5E5388;
+      --chart:#A9741F;
+    }
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);margin:0;padding:0 16px 64px;line-height:1.5}
+  main{max-width:1280px;margin:0 auto}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin:36px 0 6px}
+  h1{font-size:clamp(22px,4vw,32px);margin:0 0 4px;letter-spacing:-.01em}
+  h2{font-size:17px;margin:36px 0 10px}
+  h3{margin:26px 0 8px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;font-family:var(--mono);font-size:11.5px}
+  .sub{color:var(--muted);font-size:13.5px;max-width:70ch;margin:0}
+  .sub b{color:var(--ink)}
+  nav{display:flex;gap:6px;margin:22px 0 8px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  nav a{font-family:var(--mono);font-size:12.5px;letter-spacing:.04em;color:var(--muted);text-decoration:none;padding:8px 14px;border:1px solid transparent;border-bottom:none;border-radius:6px 6px 0 0}
+  nav a.on{color:var(--accent);background:var(--panel);border-color:var(--line)}
+  nav a:focus-visible{outline:2px solid var(--accent)}
+  section{display:none} section.on{display:block}
+  .tablewrap{overflow-x:auto;margin-top:14px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
+  table{border-collapse:collapse;font-family:var(--mono);font-size:13px;width:100%;font-variant-numeric:tabular-nums}
+  th,td{padding:6px 9px;text-align:center;border-bottom:1px solid var(--line)}
+  thead th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:11px;letter-spacing:.06em;position:sticky;top:0}
+  tbody th{background:var(--panel2);color:var(--ink);text-align:left;font-weight:600;white-space:nowrap;font-size:12px}
+  #mx{min-width:820px}
+  #mx td{color:#0B0F14;font-weight:700;cursor:default}
+  @media (prefers-color-scheme: light){ #mx td{color:#fff} }
+  #mx td.r0{background:var(--good)} #mx td.r1{background:var(--good2)} #mx td.r2{background:var(--mid)} #mx td.r3{background:var(--warn)} #mx td.r4{background:var(--bad)}
+  #mx td.rx{background:var(--void);color:var(--voidink);font-weight:600}
+  #mx tr.hl td, #mx tr.hl th{outline:1px solid var(--accent);outline-offset:-1px}
+  #mx td.chl{box-shadow:inset 0 0 0 2px var(--accent)}
+  .roster td.pl, .stations td.pl{text-align:left}
+  .roster td.up{color:var(--good)} .roster td.dn{color:var(--bad)}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-family:var(--mono);font-size:11.5px;color:var(--muted);align-items:center}
+  .sw{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+  .chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin-top:14px}
+  .chip{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:5px;padding:10px 13px;font-size:13px}
+  .chip b{font-family:var(--mono);font-size:12.5px}
+  .chip .vs{color:var(--muted);font-size:12px;display:block;margin-bottom:2px}
+  .chip .ratio{float:right;font-family:var(--mono);color:var(--accent);font-size:12px}
+  .selrow{display:flex;gap:18px;flex-wrap:wrap;margin:18px 0 4px;align-items:end}
+  .selrow label{display:flex;flex-direction:column;gap:5px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .selrow select{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:5px;padding:7px 10px;font-family:var(--mono);font-size:13px;min-width:220px}
+  .selrow select:focus-visible{outline:2px solid var(--accent)}
+  .ovline{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--muted);margin:14px 0 2px}
+  .ovline b{color:var(--ink);font-weight:600}
+  .ovline .aname{color:var(--accent);font-size:13px}
+  .trendbox{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 16px 8px;margin-top:14px;position:relative}
+  .trendsum{font-family:var(--mono);font-size:12px;color:var(--muted);margin:0 0 8px}
+  .trendsum b{color:var(--ink);font-weight:600}
+  .trendsvg{display:block;width:100%;height:150px}
+  .trendtip{position:absolute;pointer-events:none;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:4px 8px;font-family:var(--mono);font-size:11.5px;color:var(--ink);white-space:nowrap;display:none;z-index:2}
+  .stamp{display:inline-block;font-family:var(--mono);font-size:11px;color:var(--accent);border:1px solid var(--line);border-radius:4px;padding:2px 8px;margin-left:8px;vertical-align:2px}
+  footer{margin-top:48px;border-top:1px solid var(--line);padding-top:14px;color:var(--muted);font-size:12px;max-width:75ch}
+  footer p{margin:6px 0}
+  @media (prefers-reduced-motion: no-preference){ section.on{animation:fade .18s ease} @keyframes fade{from{opacity:.4}to{opacity:1}} }
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">Bishop Trading Co. · Fleet Ops Hub</p>
+  <h1>BTC Ops Hub <span class="stamp">data: 2026-07-12 23:20 UTC</span></h1>
+  <p class="sub">Counter doctrine and intel snapshots for alliance use. Numbers are model-derived or public-dump-derived — see Method before quoting anything as fact.</p>
+
+  <nav id="tabs">
+    <a href="#matrix" class="on" data-t="matrix">COUNTER MATRIX</a>
+    <a href="#intel" data-t="intel">ALLIANCE INTEL</a>
+    <a href="#method" data-t="method">METHOD &amp; CAVEATS</a>
+  </nav>
+
+  <section id="t-matrix" class="on">
+    <p class="sub">Each cell: minimum <b>row-type attackers</b> to fully wipe <b>10 column-type defenders</b> (1 for Dread/Titan) at &ge;90% inside the round cap. Defending needs fewer — defenders keep the field on draws. Hover to cross-hair.</p>
+    <div class="tablewrap"><table id="mx"></table></div>
+    <div class="legend">
+      <span><span class="sw" style="background:var(--good)"></span>dominant</span>
+      <span><span class="sw" style="background:var(--good2)"></span>favorable</span>
+      <span><span class="sw" style="background:var(--mid)"></span>even</span>
+      <span><span class="sw" style="background:var(--warn)"></span>costly</span>
+      <span><span class="sw" style="background:var(--bad)"></span>bad trade</span>
+      <span><span class="sw" style="background:var(--void)"></span>&empty; cannot pierce, ever</span>
+    </div>
+    <h2>Enemy fields X &rarr; you bring Y</h2>
+    <div class="chips" id="chips"></div>
+  </section>
+
+  <section id="t-intel">
+    <p class="sub">Public-dump snapshot (nexuslegacytools.com), fetched <b>2026-07-12 23:20 UTC</b>. Dumps lag live play by hours — verify anything time-critical in game. Facts only: no strategy is encoded here.</p>
+    <div class="selrow">
+      <label>Alliance <select id="selA"></select></label>
+      <label>Compare with <select id="selB"><option value="">— none —</option></select></label>
+    </div>
+    <div id="cmp"></div>
+    <div id="detail"></div>
+  </section>
+
+  <section id="t-method">
+    <h2>Where these numbers come from</h2>
+    <p class="sub" style="margin-bottom:10px"><b>Counter matrix:</b> ~950 simulation batteries on the community battle engine (nexuslegacytools). Every stat visible on in-game ship cards matches the engine exactly, but shield pools, shield regen, and the round cap are the model's reconstruction — unvalidated against large real battle reports. Pure-type duels at vanilla tech; mixed fleets shift rapid-fire economics substantially. Carrier row excludes wing buffs; bomber &times;3 vs defense buildings not shown.</p>
+    <p class="sub" style="margin-bottom:10px"><b>Intel:</b> joined from nexuslegacytools public JSON dumps (players, alliances, per-arm universe data, 7-day histories). Score/ranking snapshots only — no private account data exists in the dumps. The station/planet feed lags live play. Tracked alliances are added as we gather intel on them.</p>
+    <p class="sub"><b>Wanted for calibration:</b> shipyard cost screens for Torpedo Frigate / Carrier / Battleship / Bomber, and ANY battle report with 100+ ships per side. Those two things upgrade every number on this page.</p>
+  </section>
+
+  <footer>
+    <p>Compiled by McBeer89's ops toolkit · snapshot 2026-07-12 23:20 UTC · regenerate: tools/build-ops-hub.js</p>
+  </footer>
+</main>
+<script>
+const NAMES=["Scout","Fighter","Interceptor","Torp. Frigate","Cruiser","Carrier","Battleship","Missile Cruiser","Bomber","Dreadnought","Titan"];
+const DEFN=[10,10,10,10,10,10,10,10,10,1,1];
+const M=[[14,33,88,30,220,324,236,148,96,null,null],[7,16,44,4,102,146,112,132,43,null,null],[2,3,13,13,111,118,180,132,43,null,null],[5,40,10,12,31,76,10,42,34,null,null],[1,2,2,6,23,64,76,33,19,null,null],[1,1,13,12,48,136,112,69,39,null,null],[3,6,1,13,2,47,39,2,14,66,null],[3,1,1,5,22,60,61,31,3,150,null],[2,5,4,4,13,37,29,44,12,74,null],[2,1,1,2,1,1,1,1,1,7,52],[1,1,1,2,1,1,1,1,1,1,9]];
+const CHIPS=[["Fighter swarms","Missile Cruisers","1 MC : 10 F"],["Interceptor packs","Battleships","1 BS : 10 Int"],["Cruiser walls","Battleships (Bombers if none)","2 BS : 10 Cru"],["Missile Cruiser lines","Battleships","2 BS : 10 MC"],["Battleships","Torpedo Frigates — screen them!","10 TF : 10 BS"],["Battleships (no TFs yet)","Fighters","112 F : 10 BS"],["Torpedo Frigates","Fighters","4 F : 10 TF"],["Bombers","Missile Cruisers","3 MC : 10 Bmb"],["Carriers","Battleships / MCs (slow grind)","47 BS : 10 Car"],["A Dreadnought","BS 66 · Bombers 74 · MC 150 — nothing else works","per dread"],["A Titan","52 Dreads or 9 Titans. Otherwise: leave.","per titan"]];
+const INTEL=[{"history":[[1783511948,32574716,25141720,18,34],[1783525542,33153553,25683460,18,34],[1783544008,34335760,26783860,18,34],[1783550220,35296286,27713240,16,34],[1783560539,36142405,28504320,16,34],[1783578646,36246321,28484870,16,34],[1783589085,37253071,29460500,16,34],[1783607197,38366569,30494200,17,34],[1783617699,39465416,31552500,17,34],[1783635812,40413299,32425940,17,34],[1783646121,41129104,33071750,17,34],[1783664232,42133665,33974040,17,34],[1783674627,42542675,34376560,17,34],[1783692737,43818522,35597420,16,34],[1783703141,43168370,34893650,17,34],[1783721262,45362598,37020300,17,34],[1783731348,45449860,37070420,17,34],[1783749469,45871908,37421090,17,34],[1783759497,46232342,37673170,17,34],[1783777619,47271190,38643790,17,34],[1783787762,48013123,39357890,17,34],[1783805885,48308489,39555070,17,34],[1783815893,49356423,40508080,17,34],[1783834011,50060430,41080870,17,34],[1783843960,50348933,41286790,16,34],[1783862081,47456357,38760740,17,33],[1783872251,47338038,38601030,17,33],[1783890378,48416294,39586710,17,33]],"tag":"BTC","name":"Bishop Trading Co.","rank":17,"overall":48416294,"military":39586710,"economy":4949873,"research":3879711,"memberCount":33,"planetCount":91,"stationCount":9,"fetchedAt":"2026-07-12T23:20:42.203Z","roster":[[104,"Xanes","scientist",5741768,4998040,2763709,4],[145,"McBeer89","explorer",4386011,3917790,1974260,4],[166,"StarKiller_14","industrialist",3760538,3426970,2357948,3],[169,"Kalciver","scientist",3899765,3420390,1768767,4],[193,"Vanderhall","scientist",3310281,3015600,1429006,3],[217,"Lepard","explorer",3164817,2766920,2519815,4],[218,"Dene181","explorer",3280589,2761220,1660355,4],[307,"Arkina","industrialist",2494511,2059860,1008314,4],[343,"M004","diplomat",1998509,1775960,-70052,3],[401,"Judgement","warlord",1708200,1526180,950904,3],[458,"Aaronb","scientist",1642726,1377360,842246,3],[507,"Fetzen_C137","industrialist",1650469,1252020,1099109,3],[654,"KBlast","industrialist",1340403,931520,294819,4],[662,"Resonant","scientist",1088337,911530,296138,3],[677,"AdrikRuk","explorer",1357813,884000,486291,3],[833,"Thoreandan","scientist",1018820,681530,0,3],[872,"Fojer","diplomat",938239,640970,547768,3],[888,"DeathRoams","industrialist",831527,629870,400103,3],[984,"Sing","industrialist",857891,537820,361006,3],[1040,"Notics","industrialist",695203,484930,-220703,3],[1201,"Murloc","diplomat",654904,382420,286368,3],[1317,"Elvyn_Nightshade","industrialist",391599,322670,233440,1],[1367,"BogDog","industrialist",624060,297310,213392,3],[1451,"Hosaki","diplomat",371461,259170,299562,2],[1991,"Taro8122","scientist",184986,120250,154323,1],[2382,"Sturmir","scientist",111454,68200,-156788,2],[2645,"EddieIsHere","scientist",193490,44680,15666,3],[2676,"DrGreen","industrialist",352344,42140,-13143,3],[2683,"Whyte","explorer",81077,41440,34205,2],[3734,"Vic","scientist",150022,3000,31905,2],[4071,"Whitehawk87666","scientist",58239,1650,32181,0],[4180,"Roboter","diplomat",17397,1650,4089,1],[4541,"Spake","industrialist",58844,1650,8818,1]],"stations":[["Station Epsilon","Z27-45","open","McBeer89"],["Station Alpha","Z27-5","open","McBeer89"],["Station Gamma","Z29-25","open","—"],["Station Alpha","Z29-5","open","—"],["Station Beta","Z30-15","open","DeathRoams"],["Station Gamma","Z30-25","open","DeathRoams"],["Station Delta","Z30-35","open","Arkina"],["Station Epsilon","Z30-45","open","M004"],["Station Alpha","Z30-5","open","Kalciver"]]},{"history":[[1783511948,38709777,29722380,14,32],[1783525542,39491552,30396300,14,32],[1783544008,40829213,31549860,13,35],[1783550220,41741931,32429470,13,35],[1783560539,41955850,32555620,14,35],[1783578646,42611246,33128250,14,35],[1783589085,43447798,33893490,14,35],[1783607197,44759426,35038620,14,36],[1783617699,45669368,35901710,14,36],[1783635812,46019617,36024180,14,38],[1783646121,46508888,36469340,14,38],[1783664232,47240984,37025380,14,38],[1783674627,48606076,38194780,14,39],[1783692737,49578308,39012320,14,39],[1783703141,49964488,39336910,14,39],[1783721262,50607950,39970090,14,38],[1783731348,50837935,40191150,14,39],[1783749469,52103349,41327410,13,39],[1783759497,49541048,39214480,15,38],[1783777619,50560238,40064250,15,39],[1783787762,51408628,40882260,15,39],[1783805885,52062055,41282400,16,39],[1783815893,53167463,42305530,15,39],[1783834011,53107409,42176390,15,39],[1783843960,53585520,42567130,14,39],[1783862081,57297004,45739270,14,39],[1783872251,57993283,46341310,14,39],[1783890378,57612547,45822730,15,39]],"tag":"PL","name":"POLSKA","rank":15,"overall":57612547,"military":45822730,"economy":7393926,"research":4395891,"memberCount":39,"planetCount":101,"stationCount":29,"fetchedAt":"2026-07-12T23:20:42.203Z","roster":[[39,"StevieWonder","industrialist",8264216,7895450,4519938,4],[115,"insaned","diplomat",5219723,4704440,2846017,4],[123,"Mojsze","industrialist",4682505,4338970,2390930,3],[163,"warriorsogor","explorer",3868688,3466340,1801871,4],[353,"xadi","diplomat",2162306,1727900,820561,3],[386,"Frass","explorer",1843136,1578650,1281625,2],[387,"barawa1987","industrialist",1999121,1577850,692989,4],[471,"ABardWithAWard","scientist",1715059,1329800,1065289,2],[503,"Dudauke","industrialist",1625395,1255570,799566,3],[515,"Luigi","industrialist",1453818,1238250,420344,3],[536,"PrzemoC","industrialist",1585495,1190540,961520,3],[546,"Saszex","industrialist",1426006,1159640,898622,3],[563,"Oniksos","scientist",1412987,1107850,301626,3],[583,"Miszczu3","industrialist",1473597,1064990,1134929,3],[587,"AdiJager","industrialist",1580140,1052050,631530,3],[608,"Laki","industrialist",1786977,1012000,579958,4],[636,"Chcesz","scientist",1545760,961700,649623,4],[639,"Maximus","scientist",1249639,959280,661136,1],[640,"zulik","industrialist",1325821,958600,628057,3],[656,"Lozi","industrialist",1325878,928270,24224,2],[687,"Artur825","warlord",1136483,864260,741675,3],[715,"Mooxa","scientist",1187877,816840,473494,2],[779,"Dzika","scientist",1034847,741340,604808,2],[819,"kamil1335","explorer",861051,698680,490649,1],[875,"Sxwar3Q","scientist",847291,638540,541383,2],[1062,"Endriu","scientist",953353,466980,391407,4],[1176,"jacekr2d2","warlord",584266,392330,307251,2],[1316,"ZlisZ","explorer",596977,322980,213333,2],[1419,"Aramis_84","explorer",473246,273620,241010,3],[1481,"Jarmisiek","diplomat",540036,245200,193931,3],[1602,"jamaicaNN","explorer",427614,203010,101735,3],[1740,"IdzioR022","industrialist",480872,169000,185271,3],[1908,"Mucha","warlord",172295,137120,167188,0],[2040,"Niedziel_","warlord",186763,113380,179804,2],[2276,"noname01","warlord",124780,79720,121889,1],[2450,"Insane3","scientist",135430,62300,109015,2],[2675,"Nocte","explorer",79183,42190,66918,2],[2861,"LEON","scientist",54189,29150,43098,0],[3112,"Babcinka","scientist",189727,17950,58659,3]],"stations":[["Station Delta","E37-35","dead","barawa1987"],["Station Alpha","E37-5","dead","barawa1987"],["Station Gamma","E39-25","dead","barawa1987"],["Station Gamma","E40-25","dead","barawa1987"],["Station Beta","E41-15","dead","barawa1987"],["Station Beta","E42-15","dead","barawa1987"],["Station Gamma","E42-25","dead","barawa1987"],["Station Delta","E42-35","dead","insaned"],["Station Epsilon","E42-45","dead","barawa1987"],["Station Alpha","E42-5","dead","insaned"],["Station Delta","E44-35","dead","barawa1987"],["Station Epsilon","E44-45","dead","Oniksos"],["Station Beta","Z36-15","dead","barawa1987"],["Station Beta","A26-15","open","barawa1987"],["Station Alpha","A26-5","open","barawa1987"],["Station Alpha","A29-5","open","insaned"],["Station Gamma","D22-25","open","warriorsogor"],["Station Beta","D23-15","open","warriorsogor"],["Station Gamma","D23-25","open","warriorsogor"],["Station Delta","D23-35","open","warriorsogor"],["Station Epsilon","D23-45","open","warriorsogor"],["Station Alpha","D23-5","open","StevieWonder"],["Station Alpha","D25-5","open","StevieWonder"],["Station Alpha","D26-5","open","Mojsze"],["Station Beta","E24-15","open","ABardWithAWard"],["Station Beta","E25-15","open","ABardWithAWard"],["Station Gamma","G25-25","open","warriorsogor"],["Station Beta","Z21-15","open","barawa1987"],["Station Beta","Z32-15","open","barawa1987"]]}];
+const fmt=n=>n==null?"—":n.toLocaleString("en-US");
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+// ---- counter matrix ----
+function bucket(v,dn){ if(v==null)return"rx"; const r=v/dn; if(r<0.5)return"r0"; if(r<=1)return"r1"; if(r<=2)return"r2"; if(r<=6)return"r3"; return"r4"; }
+const mx=document.getElementById("mx");
+let h="<thead><tr><th>atk &darr; &middot; def &rarr;</th>"+NAMES.map((n,i)=>"<th>"+n+(DEFN[i]===1?" \u00d71":" \u00d710")+"</th>").join("")+"</tr></thead><tbody>";
+M.forEach((row,i)=>{
+  h+="<tr><th>"+NAMES[i]+"</th>"+row.map((v,j)=>{
+    const t=v==null?NAMES[i]+" can never pierce "+NAMES[j]+" shields":v+" "+NAMES[i]+"(s) wipe "+DEFN[j]+" "+NAMES[j]+"(s)";
+    return "<td class='"+bucket(v,DEFN[j])+"' data-c='"+j+"' title='"+t+"'>"+(v==null?"\u2205":v)+"</td>";
+  }).join("")+"</tr>";
+});
+mx.innerHTML=h+"</tbody>";
+mx.addEventListener("mouseover",e=>{
+  const td=e.target.closest("td"); if(!td)return;
+  mx.querySelectorAll("tr.hl").forEach(x=>x.classList.remove("hl"));
+  mx.querySelectorAll("td.chl").forEach(x=>x.classList.remove("chl"));
+  td.parentElement.classList.add("hl");
+  mx.querySelectorAll("td[data-c='"+td.dataset.c+"']").forEach(x=>x.classList.add("chl"));
+});
+mx.addEventListener("mouseleave",()=>{
+  mx.querySelectorAll("tr.hl").forEach(x=>x.classList.remove("hl"));
+  mx.querySelectorAll("td.chl").forEach(x=>x.classList.remove("chl"));
+});
+document.getElementById("chips").innerHTML=CHIPS.map(c=>"<div class='chip'><span class='ratio'>"+c[2]+"</span><span class='vs'>enemy fields</span><b>"+c[0]+"</b><div style='margin-top:4px'>&rarr; bring <b>"+c[1]+"</b></div></div>").join("");
+// ---- alliance intel: dropdown view + optional comparison ----
+const selA=document.getElementById("selA"), selB=document.getElementById("selB");
+INTEL.forEach((a,i)=>{
+  selA.add(new Option("["+a.tag+"] "+a.name,i));
+  selB.add(new Option("["+a.tag+"] "+a.name,i));
+});
+const day=t=>new Date(t*1000).toISOString().slice(0,10);
+const fmtM=v=>(v/1e6).toFixed(1)+"M";
+function trendSection(a){
+  const h=a.history;
+  if(!h||h.length<2) return "";
+  const f=h[0], l=h[h.length-1];
+  const days=Math.max(1,(l[0]-f[0])/86400);
+  const dOv=l[1]-f[1];
+  return "<h3>Growth — overall score</h3><div class='trendbox' data-ai='"+INTEL.indexOf(a)+"'>"+
+    "<p class='trendsum'><b>"+day(f[0])+" &rarr; "+day(l[0])+"</b> ("+days.toFixed(1)+"d) · overall <b>"+fmtM(f[1])+" &rarr; "+fmtM(l[1])+"</b> (+"+fmtM(dOv)+", &asymp;<b>"+fmtM(dOv/days)+"/day</b>) · military +"+fmtM(l[2]-f[2])+" · rank "+f[3]+"&rarr;"+l[3]+" · members "+f[4]+"&rarr;"+l[4]+"</p>"+
+    "<svg class='trendsvg' aria-label='Overall score over time'></svg><div class='trendtip'></div></div>";
+}
+function drawTrend(box){
+  const a=INTEL[+box.dataset.ai], h=a.history;
+  const svg=box.querySelector("svg"), tip=box.querySelector(".trendtip");
+  const W=svg.clientWidth||800, H=150, padL=8, padR=64, padT=12, padB=20;
+  const t0=h[0][0], t1=h[h.length-1][0];
+  let vmin=Infinity, vmax=-Infinity;
+  for(const p of h){ if(p[1]<vmin)vmin=p[1]; if(p[1]>vmax)vmax=p[1]; }
+  const span=Math.max(1,vmax-vmin); vmin-=span*0.06; vmax+=span*0.06;
+  const X=t=>padL+(t-t0)/Math.max(1,t1-t0)*(W-padL-padR);
+  const Y=v=>padT+(1-(v-vmin)/(vmax-vmin))*(H-padT-padB);
+  const pts=h.map(p=>[X(p[0]),Y(p[1])]);
+  let s="";
+  // recessive grid: 3 horizontal lines
+  for(let i=1;i<=3;i++){ const y=padT+i*(H-padT-padB)/4;
+    s+="<line x1='"+padL+"' y1='"+y+"' x2='"+(W-padR)+"' y2='"+y+"' stroke='var(--line)' stroke-width='1'/>"; }
+  s+="<path d='M"+pts.map(p=>p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" L")+"' fill='none' stroke='var(--chart)' stroke-width='2' vector-effect='non-scaling-stroke'/>";
+  const e=pts[pts.length-1];
+  s+="<circle cx='"+e[0].toFixed(1)+"' cy='"+e[1].toFixed(1)+"' r='4' fill='var(--chart)'/>";
+  s+="<text x='"+(e[0]+8)+"' y='"+(e[1]+4)+"' font-size='11' font-family='var(--mono)' fill='var(--ink)'>"+fmtM(h[h.length-1][1])+"</text>";
+  s+="<text x='"+padL+"' y='"+(H-4)+"' font-size='10' font-family='var(--mono)' fill='var(--muted)'>"+day(t0)+"</text>";
+  s+="<text x='"+(W-padR)+"' y='"+(H-4)+"' font-size='10' font-family='var(--mono)' fill='var(--muted)' text-anchor='end'>"+day(t1)+"</text>";
+  s+="<line class='xh' x1='0' y1='"+padT+"' x2='0' y2='"+(H-padB)+"' stroke='var(--muted)' stroke-width='1' stroke-dasharray='3 3' visibility='hidden'/>";
+  svg.setAttribute("viewBox","0 0 "+W+" "+H);
+  svg.innerHTML=s;
+  const xh=svg.querySelector(".xh");
+  svg.addEventListener("mousemove",ev=>{
+    const r=svg.getBoundingClientRect();
+    const mx=(ev.clientX-r.left)*(W/r.width);
+    let bi=0,bd=Infinity;
+    pts.forEach((p,i)=>{ const d=Math.abs(p[0]-mx); if(d<bd){bd=d;bi=i;} });
+    xh.setAttribute("x1",pts[bi][0]); xh.setAttribute("x2",pts[bi][0]); xh.setAttribute("visibility","visible");
+    tip.style.display="block";
+    tip.innerHTML=day(h[bi][0])+" · overall <b>"+fmt(h[bi][1])+"</b> · rank "+h[bi][3];
+    const tx=Math.min(pts[bi][0]/W*r.width+10, r.width-tip.offsetWidth-4);
+    tip.style.left=tx+"px"; tip.style.top="34px";
+  });
+  svg.addEventListener("mouseleave",()=>{ tip.style.display="none"; xh.setAttribute("visibility","hidden"); });
+}
+function detailHtml(a){
+  const roster=a.roster.map(r=>"<tr><td>"+r[0]+"</td><td class='pl'>"+esc(r[1])+"</td><td>"+esc(r[2])+"</td><td>"+fmt(r[3])+"</td><td>"+fmt(r[4])+"</td><td class='"+(r[5]>=0?"up":"dn")+"'>"+(r[5]==null?"—":(r[5]>=0?"+":"")+fmt(r[5]))+"</td><td>"+r[6]+"</td></tr>").join("");
+  const stations=a.stations.map(s=>"<tr><td class='pl'>"+esc(s[0])+"</td><td>"+esc(s[1])+"</td><td>"+esc(s[2])+"</td><td>"+esc(s[3])+"</td></tr>").join("");
+  return "<div class='ovline'><span class='aname'>["+esc(a.tag)+"] "+esc(a.name)+"</span>"+
+    "<span>rank <b>"+a.rank+"</b></span><span>overall <b>"+fmt(a.overall)+"</b></span><span>military <b>"+fmt(a.military)+"</b></span>"+
+    "<span>members <b>"+a.memberCount+"</b></span><span>planets <b>"+a.planetCount+"</b></span><span>stations <b>"+a.stationCount+"</b></span></div>"+
+    trendSection(a)+
+    "<h3>Roster ("+a.memberCount+")</h3><div class='tablewrap'><table class='roster'>"+
+    "<thead><tr><th>Rank</th><th>Player</th><th>Leader</th><th>Overall</th><th>Military</th><th>7d &Delta;</th><th>Pl.</th></tr></thead><tbody>"+roster+"</tbody></table></div>"+
+    "<h3>Stations ("+a.stationCount+")</h3><div class='tablewrap' style='max-width:720px'><table class='stations'>"+
+    "<thead><tr><th>Station</th><th>System</th><th>Zone</th><th>Held by</th></tr></thead><tbody>"+stations+"</tbody></table></div>";
+}
+function cmpHtml(a,b){
+  const row=(l,x,y)=>"<tr><th>"+l+"</th><td>"+x+"</td><td>"+y+"</td></tr>";
+  return "<h3>Head to head</h3><div class='tablewrap' style='max-width:640px'><table>"+
+    "<thead><tr><th></th><th>["+esc(a.tag)+"] "+esc(a.name)+"</th><th>["+esc(b.tag)+"] "+esc(b.name)+"</th></tr></thead><tbody>"+
+    row("Universe rank",a.rank,b.rank)+
+    row("Overall score",fmt(a.overall),fmt(b.overall))+
+    row("Military score",fmt(a.military),fmt(b.military))+
+    row("Economy score",fmt(a.economy),fmt(b.economy))+
+    row("Research score",fmt(a.research),fmt(b.research))+
+    row("Members",a.memberCount,b.memberCount)+
+    row("Planets",a.planetCount,b.planetCount)+
+    row("Stations held",a.stationCount,b.stationCount)+
+    "</tbody></table></div>";
+}
+function renderIntel(){
+  const a=INTEL[+selA.value];
+  const b=selB.value===""?null:INTEL[+selB.value];
+  document.getElementById("cmp").innerHTML=(b&&b!==a)?cmpHtml(a,b):"";
+  document.getElementById("detail").innerHTML=detailHtml(a)+((b&&b!==a)?detailHtml(b):"");
+  document.querySelectorAll(".trendbox").forEach(drawTrend);
+}
+selA.addEventListener("change",renderIntel);
+selB.addEventListener("change",renderIntel);
+let rsz;
+window.addEventListener("resize",()=>{ clearTimeout(rsz); rsz=setTimeout(renderIntel,150); });
+renderIntel();
+// ---- tabs (hash-based so links can deep-link a tab) ----
+const tabs=document.getElementById("tabs");
+function show(t){
+  tabs.querySelectorAll("a").forEach(x=>x.classList.toggle("on",x.dataset.t===t));
+  document.querySelectorAll("main > section").forEach(s=>s.classList.toggle("on",s.id==="t-"+t));
+  if(t==="intel") requestAnimationFrame(()=>document.querySelectorAll(".trendbox").forEach(drawTrend));
+}
+tabs.addEventListener("click",e=>{
+  const a=e.target.closest("a"); if(!a)return;
+  e.preventDefault(); history.replaceState(null,"","#"+a.dataset.t); show(a.dataset.t);
+});
+const initial=(location.hash||"#matrix").slice(1);
+show(["matrix","intel","method"].includes(initial)?initial:"matrix");
+</script>
+</body>
+</html>

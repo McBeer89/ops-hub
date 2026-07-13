@@ -57,6 +57,14 @@
   .chip b{font-family:var(--mono);font-size:12.5px}
   .chip .vs{color:var(--muted);font-size:12px;display:block;margin-bottom:2px}
   .chip .ratio{float:right;font-family:var(--mono);color:var(--accent);font-size:12px}
+  .fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-top:10px}
+  .fgrid label{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:7px 10px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .fgrid input[type=number]{width:70px;margin-left:auto;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono);font-size:12.5px}
+  .fgrid input[type=checkbox]{accent-color:var(--accent)}
+  .btn{background:var(--accent);color:#0B0F14;border:none;border-radius:5px;padding:8px 18px;font-family:var(--mono);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.04em}
+  .btn:disabled{opacity:.5;cursor:default}
+  .btn:focus-visible{outline:2px solid var(--ink)}
+  .advbest{border-left:3px solid var(--good)}
   .selrow{display:flex;gap:18px;flex-wrap:wrap;margin:18px 0 4px;align-items:end}
   .selrow label{display:flex;flex-direction:column;gap:5px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
   .selrow select{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:5px;padding:7px 10px;font-family:var(--mono);font-size:13px;min-width:220px}
@@ -91,6 +99,7 @@
     <a href="#intel" data-t="intel">ALLIANCE INTEL</a>
     <a href="#threats" data-t="threats">THREAT BOARD</a>
     <a href="#market" data-t="market">MARKET</a>
+    <a href="#advisor" data-t="advisor">FLEET ADVISOR</a>
     <a href="#method" data-t="method">METHOD &amp; CAVEATS</a>
   </nav>
 
@@ -132,10 +141,29 @@
     <div id="markettbl"></div>
   </section>
 
+  <section id="t-advisor">
+    <p class="sub">Enter the enemy fleet (from a spy report), tick the hulls you can build, and the advisor searches counter-compositions with the battle engine <b>running in your browser</b> — ranked by build cost. It recommends the <b>margined</b> fleet size, not the knife-edge minimum: sim counts are estimates (see Method), so the default adds +25%. Vanilla tech both sides. Carriers excluded (wing mechanics unmodeled).</p>
+    <h3>Enemy fleet</h3>
+    <div class="fgrid" id="advEnemy"></div>
+    <h3>Your options</h3>
+    <div class="advopts">
+      <div class="fgrid" id="advHulls"></div>
+      <div class="selrow">
+        <label>Role <select id="advRole"><option value="defender">Defending (hold the field)</option><option value="attacker">Attacking (must wipe them)</option></select></label>
+        <label>Confidence <select id="advConf"><option value="0.9">&ge;90%</option><option value="0.95" selected>&ge;95%</option><option value="0.99">&ge;99%</option></select></label>
+        <label>Safety margin <select id="advMargin"><option value="1">none (raw minimum)</option><option value="1.25" selected>+25% (recommended)</option><option value="1.5">+50%</option></select></label>
+        <label>&nbsp;<button id="advGo" class="btn">Find counters</button></label>
+      </div>
+    </div>
+    <div id="advStatus" class="sub" style="margin-top:10px"></div>
+    <div id="advOut"></div>
+  </section>
+
   <section id="t-method">
     <h2>Where these numbers come from</h2>
     <p class="sub" style="margin-bottom:10px"><b>Counter matrix:</b> ~950 simulation batteries on the community battle engine (nexuslegacytools). Every stat visible on in-game ship cards matches the engine exactly, but shield pools, shield regen, and the round cap are the model's reconstruction — unvalidated against large real battle reports. Pure-type duels at vanilla tech; mixed fleets shift rapid-fire economics substantially. Carrier row excludes wing buffs; bomber &times;3 vs defense buildings not shown.</p>
     <p class="sub" style="margin-bottom:10px"><b>Intel:</b> joined from nexuslegacytools public JSON dumps (players, alliances, per-arm universe data, 7-day histories). Score/ranking snapshots only — no private account data exists in the dumps. The station/planet feed lags live play. Tracked alliances are added as we gather intel on them.</p>
+    <p class="sub" style="margin-bottom:10px"><b>Fleet advisor:</b> runs the same battle engine in your browser — it binary-searches each doctrine composition for the smallest fleet meeting your confidence target, adds your safety margin, and ranks the survivors by build cost. Same model caveats as the matrix: trust the composition choice more than the exact count; the margin exists because the counts are estimates.</p>
     <p class="sub"><b>Wanted for calibration:</b> shipyard cost screens for Torpedo Frigate / Carrier / Battleship / Bomber, and ANY battle report with 100+ ships per side. Those two things upgrade every number on this page.</p>
   </section>
 
@@ -143,6 +171,272 @@
     <p>Compiled by McBeer89's ops toolkit · snapshot 2026-07-12 23:47 UTC · regenerate: tools/build-ops-hub.js</p>
   </footer>
 </main>
+<script>
+'use strict';
+// Nexus Legacy battle-simulation engine.
+// Extracted verbatim from https://nexuslegacytools.com/battlesim.html (inline script,
+// lines 338-591) on 2026-07-03. Only this header and the module.exports line were added.
+// The formulas are the fan tool's model of combat, not official server code — validate
+// predictions against real in-game battle reports before trusting them for big fleets.
+
+    const SHIPS = [
+      { id:'scout',           name:'Scout',            group:'combat', hull:100,    shield:25,    attack:15,   weapon:'kinetic', rf:{} },
+      { id:'fighter',         name:'Fighter',          group:'combat', hull:250,    shield:60,    attack:30,   weapon:'laser',   rf:{ probe:5, spy_probe:5, torpedo_frigate:4 } },
+      { id:'interceptor',     name:'Interceptor',      group:'combat', hull:200,    shield:50,    attack:35,   weapon:'kinetic', rf:{ scout:5, probe:5, spy_probe:5, fighter:4 } },
+      { id:'torpedo_frigate', name:'Torpedo Frigate',  group:'combat', hull:180,    shield:40,    attack:55,   weapon:'missile', rf:{ battleship:3, dreadnought:2, titan:2 } },
+      { id:'cruiser',         name:'Cruiser',          group:'combat', hull:700,    shield:200,   attack:65,   weapon:'laser',   rf:{ scout:5, fighter:4, interceptor:2 } },
+      { id:'carrier',         name:'Carrier',          group:'combat', hull:2000,   shield:600,   attack:30,   weapon:'laser',   rf:{ scout:5, fighter:3 } },
+      { id:'battleship',      name:'Battleship',       group:'combat', hull:1500,   shield:500,   attack:90,   weapon:'plasma',  rf:{ interceptor:5, cruiser:4, missile_cruiser:3 } },
+      { id:'missile_cruiser', name:'Missile Cruiser',  group:'combat', hull:1000,   shield:300,   attack:70,   weapon:'missile', rf:{ fighter:5, interceptor:4, bomber:3 } },
+      { id:'bomber',          name:'Bomber',           group:'combat', hull:650,    shield:150,   attack:120,  weapon:'missile', rf:{} },
+      { id:'dreadnought',     name:'Dreadnought',      group:'combat', hull:20000,  shield:8000,  attack:800,  weapon:'ion',     rf:{ cruiser:5, bomber:4, battleship:3, missile_cruiser:3, fighter:3, interceptor:2, carrier:2 } },
+      { id:'titan',           name:'Titan',            group:'combat', hull:200000, shield:60000, attack:5000, weapon:'ion',     rf:{ scout:20, fighter:15, interceptor:10, cruiser:8, battleship:5, missile_cruiser:5, bomber:5, carrier:5, dreadnought:3 } },
+      { id:'probe',            name:'Probe',                group:'support', hull:30,  shield:5,   attack:0,  weapon:null,      rf:{} },
+      { id:'spy_probe',        name:'Spy Probe',            group:'support', hull:30,  shield:8,   attack:0,  weapon:null,      rf:{} },
+      { id:'stealth_ship',     name:'Stealth Ship',         group:'support', hull:150, shield:60,  attack:5,  weapon:'laser',   rf:{} },
+      { id:'assault_shuttle',  name:'Assault Shuttle',      group:'support', hull:300, shield:60,  attack:20, weapon:'kinetic', rf:{} },
+      { id:'hacker_ship',      name:'Hacker Ship',          group:'support', hull:150, shield:40,  attack:5,  weapon:'laser',   rf:{} },
+      { id:'mine_layer',       name:'Mine Layer',           group:'support', hull:250, shield:60,  attack:5,  weapon:'kinetic', rf:{} },
+      { id:'colony_ship',      name:'Colony Ship',          group:'support', hull:200, shield:50,  attack:0,  weapon:null,      rf:{} },
+      { id:'ew_ship',          name:'EW Ship',              group:'support', hull:400, shield:80,  attack:10, weapon:'ion',     rf:{} },
+      { id:'engineer_ship',    name:'Engineer Ship',        group:'support', hull:500, shield:120, attack:10, weapon:null,      rf:{} },
+      { id:'freighter',        name:'Freighter',            group:'support', hull:50,  shield:12,  attack:0,  weapon:null,      rf:{} },
+      { id:'transport_shuttle',name:'Transport Shuttle',    group:'support', hull:100, shield:25,  attack:0,  weapon:null,      rf:{} },
+      { id:'tanker',           name:'Tanker',               group:'support', hull:150, shield:35,  attack:0,  weapon:null,      rf:{} },
+      { id:'miner',            name:'Mining Ship',          group:'support', hull:200, shield:50,  attack:5,  weapon:null,      rf:{} },
+      { id:'gas_collector',    name:'Gas Collector',        group:'support', hull:250, shield:60,  attack:0,  weapon:null,      rf:{} },
+      { id:'lunar_shuttle',    name:'Lunar Shuttle',        group:'support', hull:200, shield:50,  attack:0,  weapon:null,      rf:{} },
+      { id:'ice_drill',        name:'Ice Drill',            group:'support', hull:300, shield:75,  attack:5,  weapon:null,      rf:{} },
+      { id:'ore_freighter',    name:'Ore Freighter',        group:'support', hull:300, shield:75,  attack:0,  weapon:null,      rf:{} },
+      { id:'excavator',        name:'Excavator',            group:'support', hull:400, shield:100, attack:5,  weapon:null,      rf:{} },
+    ];
+    const SHIP_BY_ID = Object.fromEntries(SHIPS.map(s => [s.id, s]));
+
+    const COMMANDERS = [
+      { id:'none',       name:'None',       attack:0,    hull:0,    shieldRegen:0 },
+      { id:'industrial', name:'Industrial', attack:0,    hull:0,    shieldRegen:0 },
+      { id:'scientific', name:'Scientific', attack:0,    hull:0,    shieldRegen:0 },
+      { id:'explorer',   name:'Explorer',   attack:0,    hull:0,    shieldRegen:0 },
+      { id:'warlord',    name:'Warlord (+10% ATK, +10% HP, +15% regen)', attack:0.10, hull:0.10, shieldRegen:0.15 },
+      { id:'diplomat',   name:'Diplomat (+6% ATK, +6% HP, +10% regen)',  attack:0.06, hull:0.06, shieldRegen:0.10 },
+    ];
+    const COMMANDER_BY_ID = Object.fromEntries(COMMANDERS.map(c => [c.id, c]));
+
+    const WEAPON_TECHS = {
+      laser:   { label:'Laser weapons',   perLevel:0.03 },
+      kinetic: { label:'Kinetic weapons', perLevel:0.03 },
+      plasma:  { label:'Plasma weapons',  perLevel:0.03 },
+      ion:     { label:'Ion cannons',     perLevel:0.02 },
+      missile: { label:'Missile systems', perLevel:0.02 },
+    };
+    const ARMOR_TECH  = { label:'Armor (HP)',  perLevel:0.02 };
+    const SHIELD_TECH = { label:'Shields',     perLevel:0.10 };
+    const TECH_FIELDS = [
+      ['laser','Laser'], ['kinetic','Kinetic'], ['plasma','Plasma'],
+      ['ion','Ion'], ['missile','Missile'], ['armor','Armor (HP)'],
+      ['shield','Shields'], ['dmgReduction','Dmg reduction %'],
+    ];
+
+    const MAX_ROUNDS        = 6;
+    const EXPLOSION_BELOW   = 0.7;
+    const SHIELD_REGEN_BASE = 0.4;
+    const DMG_VARIANCE      = 0.15;
+    const RF_CHAIN_CAP      = 16;
+    const SIM_SHIP_BUDGET   = 1.5e6;
+    const MAX_PER_TYPE      = 2e6;
+
+    function mulberry32(seed) {
+      let t = seed >>> 0;
+      return function () {
+        t = t + 1831565813 | 0;
+        let n = Math.imul(t ^ t >>> 15, 1 | t);
+        n = n + Math.imul(n ^ n >>> 7, 61 | n) ^ n;
+        return ((n ^ n >>> 14) >>> 0) / 4294967296;
+      };
+    }
+    function fnv1a(str) {
+      let h = 2166136261;
+      for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+      return h >>> 0;
+    }
+
+    function modifiedStats(ship, side) {
+      const cmd = COMMANDER_BY_ID[side.commander] || COMMANDER_BY_ID.none;
+      const weaponBonus = ship.weapon && WEAPON_TECHS[ship.weapon]
+        ? WEAPON_TECHS[ship.weapon].perLevel * (side.tech[ship.weapon] || 0) : 0;
+      const atkMult    = 1 + cmd.attack + weaponBonus;
+      const hullMult   = 1 + cmd.hull + ARMOR_TECH.perLevel * (side.tech.armor || 0);
+      const shieldMult = 1 + SHIELD_TECH.perLevel * (side.tech.shield || 0);
+      return { attack: ship.attack * atkMult, hull: ship.hull * hullMult, shield: (ship.shield || 0) * shieldMult };
+    }
+
+    function buildBlueprints(fleet, side) {
+      const blueprints = [];
+      let total = 0;
+      for (const [id, n] of Object.entries(fleet)) {
+        const count = Math.min(MAX_PER_TYPE, Math.max(0, Math.floor(n || 0)));
+        if (count <= 0) continue;
+        const ship = SHIP_BY_ID[id];
+        if (!ship) continue;
+        const { attack, hull, shield } = modifiedStats(ship, side);
+        blueprints.push({ typeId: id, count, attack, maxHull: hull, maxShield: shield,
+          expThreshold: hull * EXPLOSION_BELOW, rf: ship.rf || {} });
+        total += count;
+      }
+      return { blueprints, total };
+    }
+
+    function expandFleet(blueprints) {
+      const units = [];
+      for (const b of blueprints)
+        for (let i = 0; i < b.count; i++)
+          units.push({ typeId: b.typeId, hull: b.maxHull, maxHull: b.maxHull,
+            shield: b.maxShield, maxShield: b.maxShield,
+            expThreshold: b.expThreshold, attack: b.attack, rf: b.rf });
+      return units;
+    }
+
+    function regenShields(units, rate) {
+      if (rate <= 0) return;
+      for (const u of units) {
+        const s = u.shield + u.maxShield * rate;
+        u.shield = s > u.maxShield ? u.maxShield : s;
+      }
+    }
+
+    function fireVolley(shooters, targets, rng, dmgMult) {
+      for (let i = 0; i < shooters.length; i++) {
+        const baseDmg = shooters[i].attack * dmgMult;
+        const rf = shooters[i].rf;
+        let firing = true, shots = 0;
+        while (firing) {
+          shots++;
+          const n = targets.length;
+          if (n === 0) return;
+          const ti = rng() * n | 0;
+          const target = targets[ti];
+          const rfMult = rf[target.typeId] || 1;
+          const dmg = baseDmg * (1 + (rng() * 2 - 1) * DMG_VARIANCE);
+
+          if (dmg * 100 >= target.shield) {
+            let rest = dmg;
+            if (target.shield > 0) {
+              if (rest <= target.shield) { target.shield -= rest; rest = 0; }
+              else { rest -= target.shield; target.shield = 0; }
+            }
+            if (rest > 0) {
+              target.hull -= rest;
+              let dead = target.hull <= 0;
+              if (!dead && target.hull < target.expThreshold && rng() < 1 - target.hull / target.maxHull) dead = true;
+              if (dead) {
+                const last = targets.pop();
+                if (ti < targets.length) targets[ti] = last;
+              }
+            }
+          }
+          firing = rfMult > 1 && shots < RF_CHAIN_CAP;
+        }
+      }
+    }
+
+    function countByType(units) {
+      const c = {};
+      for (const u of units) c[u.typeId] = (c[u.typeId] || 0) + 1;
+      return c;
+    }
+
+    function runBattle(atkUnits, defUnits, atkRegen, defRegen, atkDmgMult, defDmgMult, rng) {
+      let round = 0;
+      for (round = 1; round <= MAX_ROUNDS; round++) {
+        if (atkUnits.length === 0 || defUnits.length === 0) break;
+        if (round > 1) { regenShields(atkUnits, atkRegen); regenShields(defUnits, defRegen); }
+        const atkShooters = atkUnits.filter(u => u.attack > 0);
+        const defShooters = defUnits.filter(u => u.attack > 0);
+        fireVolley(atkShooters, defUnits, rng, defDmgMult);
+        fireVolley(defShooters, atkUnits, rng, atkDmgMult);
+      }
+      let winner = 'draw';
+      if (atkUnits.length > 0 && defUnits.length === 0) winner = 'attacker';
+      else if (defUnits.length > 0 && atkUnits.length === 0) winner = 'defender';
+      return { winner, round: Math.min(round, MAX_ROUNDS), aliveA: atkUnits, aliveD: defUnits };
+    }
+
+    function simulate(atkFleet, defFleet, atkSide, defSide, requestedSims) {
+      const { blueprints: bpA, total: totalA } = buildBlueprints(atkFleet, atkSide);
+      const { blueprints: bpD, total: totalD } = buildBlueprints(defFleet, defSide);
+      if (totalA + totalD === 0) return null;
+
+      let sims = Math.max(1, Math.floor(requestedSims));
+      const perSim = totalA + totalD;
+      if (perSim * sims > SIM_SHIP_BUDGET) sims = Math.max(1, Math.floor(SIM_SHIP_BUDGET / perSim));
+
+      const seed = fnv1a(JSON.stringify([atkFleet, defFleet, atkSide, defSide, sims]));
+      const rng = mulberry32(seed);
+
+      const cmdA = COMMANDER_BY_ID[atkSide.commander] || COMMANDER_BY_ID.none;
+      const cmdD = COMMANDER_BY_ID[defSide.commander] || COMMANDER_BY_ID.none;
+      const atkRegen = SHIELD_REGEN_BASE + cmdA.shieldRegen;
+      const defRegen = SHIELD_REGEN_BASE + cmdD.shieldRegen;
+      const clampRed = v => Math.min(0.9, Math.max(0, (v || 0) / 100));
+      const atkDmgMult = 1 - clampRed(atkSide.tech.dmgReduction);
+      const defDmgMult = 1 - clampRed(defSide.tech.dmgReduction);
+
+      const wins = { attacker: 0, defender: 0, draw: 0 };
+      let roundSum = 0;
+      const survA = {}, survD = {};
+      const sum = c => Object.values(c).reduce((n, v) => n + v, 0);
+      let best = null, worst = null;
+
+      for (let i = 0; i < sims; i++) {
+        const r = runBattle(expandFleet(bpA), expandFleet(bpD),
+          atkRegen, defRegen, atkDmgMult, defDmgMult, rng);
+        wins[r.winner]++;
+        roundSum += r.round;
+        const a = countByType(r.aliveA);
+        for (const t in a) survA[t] = (survA[t] || 0) + a[t];
+        const d = countByType(r.aliveD);
+        for (const t in d) survD[t] = (survD[t] || 0) + d[t];
+
+        const aTot = sum(a), dTot = sum(d);
+        if (!best || aTot > best.aTot || (aTot === best.aTot && dTot < best.dTot))
+          best = { a, d, aTot, dTot };
+        if (!worst || aTot < worst.aTot || (aTot === worst.aTot && dTot > worst.dTot))
+          worst = { a, d, aTot, dTot };
+      }
+
+      const initial = bps => Object.fromEntries(bps.map(b => [b.typeId, b.count]));
+      const initA = initial(bpA), initD = initial(bpD);
+
+      const outcome = (init, surv, divisor) => {
+        const rows = [];
+        let ti = 0, ts = 0;
+        for (const t in init) {
+          const n = Math.round((surv[t] || 0) / divisor);
+          rows.push({ typeId: t, initial: init[t], survivors: n, losses: Math.max(0, init[t] - n) });
+          ti += init[t]; ts += n;
+        }
+        return { rows, totalInitial: ti, totalSurvivors: ts, totalLosses: Math.max(0, ti - ts) };
+      };
+
+      let winner = 'draw';
+      if (wins.attacker >= wins.defender && wins.attacker >= wins.draw) winner = 'attacker';
+      else if (wins.defender >= wins.attacker && wins.defender >= wins.draw) winner = 'defender';
+
+      return {
+        sims, requestedSims, capped: sims < requestedSims,
+        avgRounds: roundSum / sims,
+        winRate: { attacker: wins.attacker / sims, defender: wins.defender / sims, draw: wins.draw / sims },
+        winner,
+        attacker: outcome(initA, survA, sims),
+        defender: outcome(initD, survD, sims),
+        best:  { attacker: outcome(initA, best.a, 1),  defender: outcome(initD, best.d, 1) },
+        worst: { attacker: outcome(initA, worst.a, 1), defender: outcome(initD, worst.d, 1) },
+      };
+    }
+
+window.__engine = { SHIPS, SHIP_BY_ID, simulate };
+
+</script>
 <script>
 const NAMES=["Scout","Fighter","Interceptor","Torp. Frigate","Cruiser","Carrier","Battleship","Missile Cruiser","Bomber","Dreadnought","Titan"];
 const DEFN=[10,10,10,10,10,10,10,10,10,1,1];
@@ -331,6 +625,104 @@ function renderMarket(){
 }
 selHub.addEventListener("change",renderMarket);
 renderMarket();
+// ---- fleet advisor ----
+const E=window.__engine;
+const VANSIDE={commander:"none",tech:{}};
+const ADVC={scout:502,fighter:1673,interceptor:3619,torpedo_frigate:3500,cruiser:10178,missile_cruiser:17509,battleship:30000,bomber:20000};
+const ADVFLAG={torpedo_frigate:"~",battleship:"~",bomber:"~"}; // placeholder costs
+const ENEMY_TYPES=[["scout","Scout"],["fighter","Fighter"],["interceptor","Interceptor"],["torpedo_frigate","Torp. Frigate"],["cruiser","Cruiser"],["carrier","Carrier"],["battleship","Battleship"],["missile_cruiser","Missile Cruiser"],["bomber","Bomber"],["dreadnought","Dreadnought"],["titan","Titan"]];
+const OUR_HULLS=[["fighter","Fighter",true],["interceptor","Interceptor",true],["cruiser","Cruiser",true],["missile_cruiser","Missile Cruiser",true],["torpedo_frigate","Torp. Frigate",false],["battleship","Battleship",false],["bomber","Bomber",false]];
+const ARCH=[
+  ["Fighter swarm",{fighter:1}],
+  ["Fighter + Cruiser screen",{fighter:6,cruiser:1}],
+  ["Fighter + MC screen",{fighter:8,missile_cruiser:1}],
+  ["Tri-mix wall",{fighter:10,cruiser:1,missile_cruiser:1}],
+  ["Cruiser line",{cruiser:1}],
+  ["Cruiser + MC core",{cruiser:2,missile_cruiser:1}],
+  ["Missile Cruiser line",{missile_cruiser:1}],
+  ["Interceptor pack",{interceptor:1}],
+  ["Torpedo lance",{torpedo_frigate:1}],
+  ["TF + Fighter screen",{torpedo_frigate:2,fighter:1}],
+  ["TF + Cruiser cover",{torpedo_frigate:4,cruiser:1}],
+  ["BS + Fighter escort",{fighter:6,battleship:1}],
+  ["BS + TF + Fighter combined",{fighter:6,torpedo_frigate:3,battleship:1}],
+  ["Bomber + MC strike",{bomber:2,missile_cruiser:1}],
+];
+document.getElementById("advEnemy").innerHTML=ENEMY_TYPES.map(t=>"<label>"+t[1]+"<input type='number' min='0' step='1' value='0' data-t='"+t[0]+"'></label>").join("");
+document.getElementById("advHulls").innerHTML=OUR_HULLS.map(h=>"<label><input type='checkbox' data-h='"+h[0]+"'"+(h[2]?" checked":"")+"> "+h[1]+(ADVFLAG[h[0]]?" <span style='color:var(--muted)'>(~cost)</span>":"")+"</label>").join("");
+const tick=()=>new Promise(r=>setTimeout(r,0));
+function advFleet(mix,mult){ const f={}; for(const k in mix){ const n=Math.ceil(mix[k]*mult); if(n>0)f[k]=n; } return f; }
+function advShips(f){ return Object.values(f).reduce((a,b)=>a+b,0); }
+function advSuccess(fleet,enemy,role,sims){
+  const r=role==="attacker"?E.simulate(fleet,enemy,VANSIDE,VANSIDE,sims):E.simulate(enemy,fleet,VANSIDE,VANSIDE,sims);
+  if(!r) return {ok:0,r:null};
+  const ok=role==="attacker"?r.winRate.attacker:r.winRate.defender+r.winRate.draw;
+  return {ok,r};
+}
+function advLoss(r,role){
+  const side=role==="attacker"?r.attacker:r.defender;
+  return side.rows.reduce((t,x)=>t+(ADVC[x.typeId]||0)*x.losses,0);
+}
+async function advise(){
+  const enemy={};
+  document.querySelectorAll("#advEnemy input").forEach(i=>{ const v=Math.max(0,Math.floor(+i.value||0)); if(v>0)enemy[i.dataset.t]=v; });
+  const out=document.getElementById("advOut"), st=document.getElementById("advStatus"), btn=document.getElementById("advGo");
+  out.innerHTML="";
+  if(!Object.keys(enemy).length){ st.textContent="Enter at least one enemy ship."; return; }
+  const have=new Set([...document.querySelectorAll("#advHulls input:checked")].map(i=>i.dataset.h));
+  const role=document.getElementById("advRole").value;
+  const conf=+document.getElementById("advConf").value;
+  const margin=+document.getElementById("advMargin").value;
+  const archs=ARCH.filter(a=>Object.keys(a[1]).every(h=>have.has(h)));
+  if(!archs.length){ st.textContent="Tick at least one hull you can build."; return; }
+  btn.disabled=true;
+  const results=[];
+  for(let i=0;i<archs.length;i++){
+    const [name,mix]=archs[i];
+    st.textContent="Testing "+name+" ("+(i+1)+"/"+archs.length+")\u2026";
+    await tick();
+    const unit=Object.values(mix).reduce((a,b)=>a+b,0);
+    const maxMult=Math.max(1,Math.floor(4000/unit));
+    let lo=0,hi=1,found=null;
+    while(hi<=maxMult){
+      const t=advSuccess(advFleet(mix,hi),enemy,role,120);
+      await tick();
+      if(t.ok>=conf){ found=hi; break; }
+      lo=hi; hi*=2;
+    }
+    if(found!==null){
+      while(found-lo>Math.max(1,Math.round(found*0.04))){
+        const mid=Math.round((lo+found)/2);
+        const t=advSuccess(advFleet(mix,mid),enemy,role,120);
+        await tick();
+        if(t.ok>=conf) found=mid; else lo=mid;
+      }
+      const rec=Math.max(1,Math.ceil(found*margin));
+      const fleet=advFleet(mix,rec);
+      const fin=advSuccess(fleet,enemy,role,300);
+      await tick();
+      if(fin.ok>=conf){
+        const cost=Object.entries(fleet).reduce((t,[k,n])=>t+(ADVC[k]||0)*n,0);
+        const approx=Object.keys(fleet).some(k=>ADVFLAG[k]);
+        results.push({name,fleet,cost,approx,win:fin.ok,loss:advLoss(fin.r,role)});
+      }
+    }
+  }
+  btn.disabled=false;
+  if(!results.length){
+    st.textContent="No tested composition reaches "+Math.round(conf*100)+"% within 4,000 ships \u2014 this enemy fleet is above counterable scale for your hull set (or only counterable by hulls you didn't tick).";
+    return;
+  }
+  results.sort((a,b)=>a.cost-b.cost);
+  st.textContent="Done \u2014 "+results.length+" viable counter(s), cheapest first. Sizes include your safety margin.";
+  out.innerHTML="<div class='tablewrap' style='max-width:1000px'><table><thead><tr><th></th><th>Composition</th><th>Fleet</th><th>Est. build cost</th><th>Win/hold</th><th>Avg losses</th></tr></thead><tbody>"+
+    results.map((x,i)=>"<tr"+(i===0?" class='advbest'":"")+"><td>"+(i+1)+"</td><td class='al'><b>"+esc(x.name)+"</b></td><td class='al'>"+
+      Object.entries(x.fleet).map(([k,n])=>n+" "+k.replace("missile_cruiser","MC").replace("torpedo_frigate","TF").replace("battleship","BS")).join(" + ")+
+      "</td><td>"+(x.approx?"~":"")+fmt(Math.round(x.cost))+"</td><td>"+(x.win*100).toFixed(0)+"%</td><td>"+fmt(Math.round(x.loss))+"</td></tr>").join("")+
+    "</tbody></table></div>"+
+    "<p class='sub' style='margin-top:10px'>Costs with ~ use placeholder prices for still-locked hulls. Losses are model estimates. "+(role==="defender"?"Defender numbers assume you keep the field on a draw.":"Attacker fleets must fully wipe the defenders inside the round cap.")+"</p>";
+}
+document.getElementById("advGo").addEventListener("click",advise);
 function renderIntel(){
   const a=INTEL[+selA.value];
   const b=selB.value===""?null:INTEL[+selB.value];
@@ -355,7 +747,7 @@ tabs.addEventListener("click",e=>{
   e.preventDefault(); history.replaceState(null,"","#"+a.dataset.t); show(a.dataset.t);
 });
 const initial=(location.hash||"#matrix").slice(1);
-show(["matrix","intel","threats","market","method"].includes(initial)?initial:"matrix");
+show(["matrix","intel","threats","market","advisor","method"].includes(initial)?initial:"matrix");
 </script>
 </body>
 </html>

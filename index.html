@@ -98,6 +98,9 @@
   .b-vac{background:var(--void);color:var(--voidink);border-color:var(--void)}
   .b-noal{background:var(--panel2);color:var(--muted)}
   .b-new{background:var(--good);color:#0B0F14;border-color:var(--good)}
+  .morebtn{background:var(--panel);color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:5px 14px;font-family:var(--mono);font-size:11.5px;cursor:pointer}
+  .morebtn:hover{color:var(--accent);border-color:var(--accent)}
+  .morebtn[hidden]{display:none}
   .b-zone{background:var(--panel2);color:var(--muted);margin-left:0}
   :root[data-theme="light"] .b-inact{color:#fff}
   #tgttbl th, #sttbl th, #sectbl th{cursor:pointer;user-select:none}
@@ -188,6 +191,10 @@
       <span id="tgtCount"></span>
     </div>
     <div class="tablewrap"><table id="tgttbl"></table></div>
+    <div class="tgtctl" style="margin-top:8px">
+      <button type="button" class="morebtn" id="tgtMore">show 500 more</button>
+      <button type="button" class="morebtn" id="tgtAll">show all</button>
+    </div>
   </section>
 
   <section id="t-stations">
@@ -979,9 +986,13 @@ if(TARGETS){
     rows.sort((x,y)=>{ const a=key(x),b=key(y); return (a<b?-1:a>b?1:0)*tgtSort.dir; });
     return rows;
   }
+  let tgtLimit=50;
   function renderTargets(){
-    const rows=tgtFilterAndSort();
-    document.getElementById("tgtCount").textContent="showing "+rows.length+" of "+TARGETS.rows.length;
+    const all=tgtFilterAndSort();
+    const rows=all.slice(0,tgtLimit);
+    document.getElementById("tgtCount").textContent="showing "+(rows.length<all.length?"top "+rows.length+" of ":"")+all.length+" matches ("+TARGETS.rows.length+" total)";
+    document.getElementById("tgtMore").hidden=rows.length>=all.length;
+    document.getElementById("tgtAll").hidden=rows.length>=all.length;
     let h="<thead><tr>"+tCols.map((c,i)=>"<th data-c='"+i+"' class='"+(i===tgtSort.col?(tgtSort.dir===-1?"s":"sa"):"")+"'>"+c[0]+"</th>").join("")+"</tr></thead><tbody>";
     for(const r of rows){
       const chips=[];
@@ -1004,9 +1015,12 @@ if(TARGETS){
     const th=e.target.closest("th"); if(!th)return;
     const c=+th.dataset.c;
     if(tgtSort.col===c) tgtSort.dir*=-1; else tgtSort={col:c,dir:tCols[c][2]};
+    tgtLimit=50;
     renderTargets();
   });
-  document.getElementById("tgtctl").addEventListener("change",renderTargets);
+  document.getElementById("tgtctl").addEventListener("change",()=>{ tgtLimit=50; renderTargets(); });
+  document.getElementById("tgtMore").addEventListener("click",()=>{ tgtLimit+=500; renderTargets(); });
+  document.getElementById("tgtAll").addEventListener("click",()=>{ tgtLimit=Infinity; renderTargets(); });
   renderTargets();
 }
 // ---- stations ----

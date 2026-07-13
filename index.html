@@ -110,6 +110,12 @@
   .softwarn{background:var(--panel);border:1px dashed var(--line);border-radius:5px;padding:14px;margin-top:14px;color:var(--muted);font-family:var(--mono);font-size:12px}
   .themebtn{float:right;margin-top:36px;background:var(--panel);color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:5px 12px;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;cursor:pointer}
   .themebtn:hover,.themebtn:focus-visible{color:var(--accent);border-color:var(--accent);outline:none}
+  .mres{font-family:var(--mono);font-size:11px;font-weight:700;padding:1px 7px;border-radius:3px}
+  .mok{color:var(--good);border:1px solid var(--good)}
+  .mfail{color:var(--bad);border:1px solid var(--bad)}
+  .mdraw{color:var(--warn);border:1px solid var(--warn)}
+  .miningtbl td{white-space:nowrap}
+  #t-mining a{color:var(--accent)}
   footer{margin-top:48px;border-top:1px solid var(--line);padding-top:14px;color:var(--muted);font-size:12px;max-width:75ch}
   footer p{margin:6px 0}
   @media (prefers-reduced-motion: no-preference){ section.on{animation:fade .18s ease} @keyframes fade{from{opacity:.4}to{opacity:1}} }
@@ -129,6 +135,7 @@
     <a href="#targets" data-t="targets">TARGETS</a>
     <a href="#stations" data-t="stations">STATIONS</a>
     <a href="#market" data-t="market">MARKET</a>
+    <a href="#mining" data-t="mining">MINING</a>
     <a href="#sectors" data-t="sectors">SECTORS</a>
     <a href="#ticker" data-t="ticker">TICKER</a>
     <a href="#advisor" data-t="advisor">FLEET ADVISOR</a>
@@ -200,6 +207,26 @@
     <div id="markettbl"></div>
   </section>
 
+  <section id="t-mining">
+    <p class="sub"><b>⚠ Static community data — does not auto-update.</b> Transcribed <b>2026-07-13</b> from the player-made <a href="https://docs.google.com/spreadsheets/d/1uOZOAthGLHoZclGUmLQjHwQC2sCy12J4nwzKISiUi-I/edit?gid=0" rel="noopener">"Nexus Legacy Cheat Sheet — Mining tab"</a> shared on the official Discord. Escort ratios are that player's tested field results, not verified game formulas — if the sheet updates or the game rebalances (mining PvP is the devs' active balance area), this page lags until re-transcribed.</p>
+    <p class="sub" style="margin-top:6px">How to read: each row is a mining fleet + escort that was flown; Result = whether it survived pirate attention. Dead-space rows include the <b>actual pirate raid composition observed</b> and the miner's own tech bonuses at the time.</p>
+    
+    <h3>Sentinel space</h3>
+    <div class="tablewrap"><table class="miningtbl"><thead><tr><th>Freighters</th><th>Mining Vessels</th><th>Interceptors</th><th>Result</th></tr></thead>
+    <tbody><tr><td>5</td><td>—</td><td>0</td><td><span class="mres mok">✓ held</span></td></tr><tr><td>6–10</td><td>—</td><td>7</td><td><span class="mres mok">✓ held</span></td></tr><tr><td>11–19</td><td>—</td><td>14</td><td><span class="mres mok">✓ held</span></td></tr><tr><td>20–29</td><td>—</td><td>17</td><td><span class="mres mok">✓ held</span></td></tr><tr><td>30</td><td>—</td><td>20</td><td><span class="mres mok">✓ held</span></td></tr><tr><td>—</td><td>50</td><td>30</td><td><span class="mres mok">✓ held</span></td></tr><tr><td>—</td><td>60</td><td>55</td><td><span class="mres mok">✓ held</span></td></tr></tbody></table></div>
+    <p class="sub" style="margin-top:6px">5 freighters is the max without a military escort.</p>
+
+    <h3>Open space</h3>
+    <div class="tablewrap"><table class="miningtbl"><thead><tr><th>Mining Vessels</th><th>Interceptors</th><th>Cruisers</th><th>EW Ships</th><th>Result</th></tr></thead>
+    <tbody><tr><td>1</td><td>—</td><td>—</td><td>—</td><td><span class="mres mfail">✗ wiped</span></td></tr><tr><td>10</td><td>30</td><td>—</td><td>—</td><td><span class="mres mok">✓ held</span></td></tr><tr><td>20</td><td>60</td><td>—</td><td>—</td><td><span class="mres mok">✓ held</span></td></tr><tr><td>30</td><td>90</td><td>—</td><td>—</td><td><span class="mres mok">✓ held</span></td></tr><tr><td>10</td><td>—</td><td>10</td><td>—</td><td><span class="mres mok">✓ held</span></td></tr><tr><td>60</td><td>—</td><td>50</td><td>—</td><td><span class="mres mok">✓ held</span></td></tr><tr><td>80</td><td>—</td><td>60</td><td>5</td><td><span class="mres mok">✓ held</span></td></tr><tr><td>85</td><td>—</td><td>75</td><td>—</td><td><span class="mres mok">✓ held</span></td></tr></tbody></table></div>
+    <p class="sub" style="margin-top:6px">Freighters are not recommended for Open Space — use Mining Vessels.</p><p class="sub" style="margin-top:6px">Recommended ratio: 3 Interceptors OR 1 Cruiser per 1 Mining Vessel / Gas Collector.</p><p class="sub" style="margin-top:6px">At higher numbers fewer cruisers are needed; even better when you start including EW Ships.</p>
+
+    <h3>Dead space</h3>
+    <div class="tablewrap"><table class="miningtbl"><thead><tr><th>Mining Vessels</th><th>Excavators</th><th>Cruisers</th><th>EW Ships</th><th>Battleships</th><th>Missile Cruisers</th><th>Result</th><th>Pirate raid observed</th><th>Own techs</th></tr></thead>
+    <tbody><tr><td>1</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><span class="mres mfail">✗ wiped</span></td><td class='al'>33 F · 14 Int · 10 Cru · 4 BS</td><td class='al'>—</td></tr><tr><td>2</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><span class="mres mfail">✗ wiped</span></td><td class='al'>27 F · 16 Int · 7 Cru · 4 BS</td><td class='al'>—</td></tr><tr><td>3</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><span class="mres mfail">✗ wiped</span></td><td class='al'>38 F · 13 Int · 9 Cru · 3 BS</td><td class='al'>—</td></tr><tr><td>4</td><td>—</td><td>50</td><td>—</td><td>—</td><td>—</td><td><span class="mres mok">✓ held</span></td><td class='al'>24–40 F · 12–15 Int · 6–12 Cru · 3–4 BS</td><td class='al'>HP 12% · DmgRed 8%</td></tr><tr><td>5</td><td>—</td><td>56</td><td>—</td><td>—</td><td>—</td><td><span class="mres mok">✓ held</span></td><td class='al'>35 F · 13 Int · 8 Cru · 4 BS</td><td class='al'>HP 12% · DmgRed 8%</td></tr><tr><td>5</td><td>—</td><td>55</td><td>—</td><td>—</td><td>—</td><td><span class="mres mok">✓ held</span></td><td class='al'>21–34 F · 13–21 Int · 11–12 Cru · 2–3 BS</td><td class='al'>HP 12% · DmgRed 8%</td></tr><tr><td>6</td><td>—</td><td>63</td><td>—</td><td>—</td><td>—</td><td><span class="mres mfail">✗ wiped</span></td><td class='al'>57 F · 31 Int · 18 Cru · 6 BS</td><td class='al'>HP 12% · DmgRed 8%</td></tr><tr><td>10</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><span class="mres mfail">✗ wiped</span></td><td class='al'>70 F · 38 Int · 13 Cru · 6 BS</td><td class='al'>—</td></tr><tr><td>10</td><td>1</td><td>60</td><td>14</td><td>39</td><td>19</td><td><span class="mres mok">✓ held</span></td><td class='al'>119 F · 51 Int · 26 Cru · 15 BS</td><td class='al'>Atk 1% · HP 21% · DmgRed 10%</td></tr><tr><td>11</td><td>1</td><td>111</td><td>5</td><td>—</td><td>—</td><td><span class="mres mok">✓ held</span></td><td class='al'>84 F · 50 Int · 18 Cru · 6 BS</td><td class='al'>Atk 1% · HP 17% · DmgRed 10%</td></tr><tr><td>12</td><td>—</td><td>150</td><td>5</td><td>—</td><td>—</td><td><span class="mres mok">✓ held</span></td><td class='al'>116–117 F · 48–54 Int · 16–23 Cru · 3–7 BS</td><td class='al'>Atk 1% · HP 12% · DmgRed 8%</td></tr><tr><td>13</td><td>—</td><td>111</td><td>7</td><td>—</td><td>—</td><td><span class="mres mok">✓ held</span></td><td class='al'>88 F · 40 Int · 27 Cru · 7 BS</td><td class='al'>Atk 1% · HP 14% · DmgRed 10%</td></tr><tr><td>20</td><td>1</td><td>—</td><td>—</td><td>62</td><td>19</td><td><span class="mres mdraw">— draw</span></td><td class='al'>129 F · 71 Int · 59 Cru · 14 BS</td><td class='al'>Atk 1% · HP 21% · DmgRed 10%</td></tr><tr><td>30</td><td>—</td><td>400</td><td>20</td><td>—</td><td>—</td><td><span class="mres mok">✓ held</span></td><td class='al'>208 F · 72 Int · 60 Cru · 30 BS</td><td class='al'>HP 14% · DmgRed 8%</td></tr><tr><td>1</td><td>—</td><td>10</td><td>1</td><td>—</td><td>—</td><td><span class="mres mok">✓ held</span></td><td class='al'>—</td><td class='al'>—</td></tr><tr><td>105</td><td>1</td><td>95</td><td>5</td><td>—</td><td>—</td><td><span class="mres mfail">✗ wiped</span></td><td class='al'>530 F · 435 Int · 226 Cru · 63 BS</td><td class='al'>Atk 1% · HP 27% · DmgRed 12%</td></tr></tbody></table></div>
+    <p class="sub" style="margin-top:6px">Pirate raid size appears to scale with the mining fleet — the 105-vessel run drew a 1,254-ship raid and was wiped despite a 100-cruiser escort.</p><p class="sub" style="margin-top:6px">The observed-raid column is real logged pirate compositions vs mining fleets — useful engine-validation data in its own right.</p>
+  </section>
+
   <section id="t-sectors">
     <p class="sub">All 150 sectors from the meta dump. <b>Note:</b> sector-control fields (controller alliance, controlled-since) exist in the dump but are not yet populated by the game — this board lights up automatically when sector conquest goes live. Snapshot <b>2026-07-13 14:04 UTC</b>.</p>
     <div class="tablewrap"><table id="sectbl"></table></div>
@@ -235,6 +262,7 @@
     <h2>Where these numbers come from</h2>
     <p class="sub" style="margin-bottom:10px"><b>Counter matrix:</b> ~950 simulation batteries on the community battle engine (nexuslegacytools). Every stat visible on in-game ship cards matches the engine exactly; shield pools remain the model's reconstruction. Round cap, damage variance, and shield regen use the fan site's calibration fitted against 113 logged real battles (constants: 15 rounds, variance 0, regen 0.4; refreshed each publish). Fit quality is rough (mean error ~0.5) — trust composition choices over exact counts. Pure-type duels at vanilla tech; mixed fleets shift rapid-fire economics substantially. <b>The matrix's Carrier row is bare hulls</b> — the card-confirmed 16-fighter wing buff is a mixed-fleet composition, so it lives in the Fleet Advisor (which does model it), not in a pure-type table. Bomber &times;3 vs defense buildings also not shown (the engine sims fleet-vs-fleet only).</p>
     <p class="sub" style="margin-bottom:10px"><b>Targets / Stations / Sectors / Ticker:</b> joined nightly from the fan site's per-arm universe dumps + player score histories. INACTIVE = consecutive daily snapshots with zero economy and overall score delta (a player can be active without scoring); VACATION comes straight from the dump and such players cannot be attacked. The claim that inactive players stop producing ~24h after being flagged is player-reported and unverified. Station stocks, shields, and capture timers are as-of the snapshot stamp; the Ticker is a day-over-day diff of consecutive snapshots, so same-day events can land a day late. Sector-control fields exist in the dump but are not yet populated by the game.</p>
+    <p class="sub" style="margin-bottom:10px"><b>Mining:</b> static hand-transcription of the community "Nexus Legacy Cheat Sheet" (player-made, shared on the official Discord) — player-tested escort results, NOT auto-updating and NOT verified formulas. Re-transcribe when the sheet changes.</p>
     <p class="sub" style="margin-bottom:10px"><b>Intel:</b> joined from nexuslegacytools public JSON dumps (players, alliances, per-arm universe data, 7-day histories). Score/ranking snapshots only — no private account data exists in the dumps. The station/planet feed lags live play. Tracked alliances are added as we gather intel on them.</p>
     <p class="sub" style="margin-bottom:10px"><b>Fleet advisor:</b> runs the same battle engine in your browser — it binary-searches each doctrine composition for the smallest fleet meeting your confidence target, adds your safety margin, and lists the survivors smallest-first with their exact per-resource build bills (no market conversion). Carrier wings use the card-confirmed buff with dodge approximated as bonus EHP. Same model caveats as the matrix: trust the composition choice more than the exact count; the margin exists because the counts are estimates.</p>
     <p class="sub"><b>Wanted for calibration:</b> shipyard cost screens for Torpedo Frigate / Carrier / Battleship / Bomber, and ANY battle report with 100+ ships per side. Those two things upgrade every number on this page.</p>
@@ -1086,7 +1114,7 @@ tabs.addEventListener("click",e=>{
   e.preventDefault(); history.replaceState(null,"","#"+a.dataset.t); show(a.dataset.t);
 });
 const initial=(location.hash||"#matrix").slice(1);
-show(["matrix","intel","threats","targets","stations","market","sectors","ticker","advisor","method"].includes(initial)?initial:"matrix");
+show(["matrix","intel","threats","targets","stations","market","mining","sectors","ticker","advisor","method"].includes(initial)?initial:"matrix");
 // ---- theme toggle (dark default; explicit choice persisted) ----
 const themeBtn=document.getElementById("themeBtn");
 function themeLabel(){ themeBtn.textContent=document.documentElement.dataset.theme==="light"?"☾ dark":"☀ light"; }

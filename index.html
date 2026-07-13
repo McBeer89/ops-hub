@@ -142,7 +142,7 @@
   </section>
 
   <section id="t-advisor">
-    <p class="sub">Enter the enemy fleet (from a spy report), tick the hulls you can build, and the advisor searches counter-compositions with the battle engine <b>running in your browser</b> — ranked by build cost. It recommends the <b>margined</b> fleet size, not the knife-edge minimum: sim counts are estimates (see Method), so the default adds +25%. Vanilla tech both sides. Carriers excluded (wing mechanics unmodeled). <b>Costs cover the full resource bill</b> (ore, silicates, hydrogen, alloys, plasma cores) expressed in ore-equivalents at today's market cross-rates — re-priced with each daily update; ~ marks locked hulls with unconfirmed base costs.</p>
+    <p class="sub">Enter the enemy fleet (from a spy report), tick the hulls you can build, and the advisor searches counter-compositions with the battle engine <b>running in your browser</b> — smallest viable fleet first, with each option's <b>exact resource bill</b> (build-screen numbers, no market conversion) so you can weigh it against your own production lanes. It recommends the <b>margined</b> fleet size, not the knife-edge minimum: sim counts are estimates (see Method), so the default adds +25%. Vanilla tech both sides. Carrier comps model the card-confirmed wing buff (+25% ATK / 15% dodge to 16 fighters per carrier).</p>
     <h3>Enemy fleet</h3>
     <div class="fgrid" id="advEnemy"></div>
     <h3>Your options</h3>
@@ -163,7 +163,7 @@
     <h2>Where these numbers come from</h2>
     <p class="sub" style="margin-bottom:10px"><b>Counter matrix:</b> ~950 simulation batteries on the community battle engine (nexuslegacytools). Every stat visible on in-game ship cards matches the engine exactly, but shield pools, shield regen, and the round cap are the model's reconstruction — unvalidated against large real battle reports. Pure-type duels at vanilla tech; mixed fleets shift rapid-fire economics substantially. Carrier row excludes wing buffs; bomber &times;3 vs defense buildings not shown.</p>
     <p class="sub" style="margin-bottom:10px"><b>Intel:</b> joined from nexuslegacytools public JSON dumps (players, alliances, per-arm universe data, 7-day histories). Score/ranking snapshots only — no private account data exists in the dumps. The station/planet feed lags live play. Tracked alliances are added as we gather intel on them.</p>
-    <p class="sub" style="margin-bottom:10px"><b>Fleet advisor:</b> runs the same battle engine in your browser — it binary-searches each doctrine composition for the smallest fleet meeting your confidence target, adds your safety margin, and ranks the survivors by build cost. Same model caveats as the matrix: trust the composition choice more than the exact count; the margin exists because the counts are estimates.</p>
+    <p class="sub" style="margin-bottom:10px"><b>Fleet advisor:</b> runs the same battle engine in your browser — it binary-searches each doctrine composition for the smallest fleet meeting your confidence target, adds your safety margin, and lists the survivors smallest-first with their exact per-resource build bills (no market conversion). Carrier wings use the card-confirmed buff with dodge approximated as bonus EHP. Same model caveats as the matrix: trust the composition choice more than the exact count; the margin exists because the counts are estimates.</p>
     <p class="sub"><b>Wanted for calibration:</b> shipyard cost screens for Torpedo Frigate / Carrier / Battleship / Bomber, and ANY battle report with 100+ ships per side. Those two things upgrade every number on this page.</p>
   </section>
 
@@ -436,6 +436,18 @@
 
 window.__engine = { SHIPS, SHIP_BY_ID, simulate };
 
+// carrier wing modeling: card-confirmed buff (+25% ATK to 16 fighters per carrier;
+// 15% dodge approximated as bonus EHP). Buffed fighters are a distinct sim type so
+// enemy rapid-fire vs fighters applies to them too.
+(function(){
+  const E=window.__engine;
+  const bf={ id:'buffed_fighter', name:'Buffed Fighter', group:'combat',
+    hull:294, shield:71, attack:37.5, weapon:'laser',
+    rf:{ probe:5, spy_probe:5, torpedo_frigate:4 } };
+  E.SHIPS.push(bf); E.SHIP_BY_ID.buffed_fighter=bf;
+  for (const [sid,m] of [['interceptor',4],['cruiser',4],['carrier',3],['missile_cruiser',5],['dreadnought',3],['titan',15]])
+    E.SHIP_BY_ID[sid].rf.buffed_fighter=m;
+})();
 </script>
 <script>
 const NAMES=["Scout","Fighter","Interceptor","Torp. Frigate","Cruiser","Carrier","Battleship","Missile Cruiser","Bomber","Dreadnought","Titan"];
@@ -628,10 +640,10 @@ renderMarket();
 // ---- fleet advisor ----
 const E=window.__engine;
 const VANSIDE={commander:"none",tech:{}};
-const ADVC={"scout":559,"fighter":1818,"interceptor":3866,"cruiser":9452,"missile_cruiser":15902,"torpedo_frigate":3500,"battleship":30000,"bomber":20000};
-const ADVFLAG={torpedo_frigate:"~",battleship:"~",bomber:"~"}; // placeholder costs
+const ADVBILL={"scout":{"ore":200,"silicates":100,"alloys":20},"fighter":{"ore":500,"silicates":250,"hydrogen":50,"alloys":100},"interceptor":{"ore":900,"silicates":500,"hydrogen":200,"alloys":200},"cruiser":{"ore":2000,"silicates":1000,"hydrogen":500,"alloys":250,"plasma_core":250},"missile_cruiser":{"ore":3200,"silicates":1600,"hydrogen":800,"alloys":400,"plasma_core":500},"buffed_fighter":{"ore":500,"silicates":250,"hydrogen":50,"alloys":100}};
+const RESAB={ore:"ore",silicates:"sil",hydrogen:"hyd",alloys:"alloy",plasma_core:"plasma"};
 const ENEMY_TYPES=[["scout","Scout"],["fighter","Fighter"],["interceptor","Interceptor"],["torpedo_frigate","Torp. Frigate"],["cruiser","Cruiser"],["carrier","Carrier"],["battleship","Battleship"],["missile_cruiser","Missile Cruiser"],["bomber","Bomber"],["dreadnought","Dreadnought"],["titan","Titan"]];
-const OUR_HULLS=[["fighter","Fighter",true],["interceptor","Interceptor",true],["cruiser","Cruiser",true],["missile_cruiser","Missile Cruiser",true],["torpedo_frigate","Torp. Frigate",false],["battleship","Battleship",false],["bomber","Bomber",false]];
+const OUR_HULLS=[["fighter","Fighter",true],["interceptor","Interceptor",true],["cruiser","Cruiser",true],["missile_cruiser","Missile Cruiser",true],["torpedo_frigate","Torp. Frigate",false],["carrier","Carrier (buffs 16 F)",false],["battleship","Battleship",false],["bomber","Bomber",false]];
 const ARCH=[
   ["Fighter swarm",{fighter:1}],
   ["Fighter + Cruiser screen",{fighter:6,cruiser:1}],
@@ -644,12 +656,16 @@ const ARCH=[
   ["Torpedo lance",{torpedo_frigate:1}],
   ["TF + Fighter screen",{torpedo_frigate:2,fighter:1}],
   ["TF + Cruiser cover",{torpedo_frigate:4,cruiser:1}],
+  ["Carrier fighter swarm",{buffed_fighter:16,carrier:1}],
+  ["Carrier swarm + TF wing",{buffed_fighter:16,carrier:1,torpedo_frigate:8}],
+  ["Carrier swarm + Cruiser core",{buffed_fighter:16,carrier:1,cruiser:3}],
   ["BS + Fighter escort",{fighter:6,battleship:1}],
   ["BS + TF + Fighter combined",{fighter:6,torpedo_frigate:3,battleship:1}],
   ["Bomber + MC strike",{bomber:2,missile_cruiser:1}],
 ];
+const HULLKEY=h=>h==="buffed_fighter"?"carrier-and-fighter":h; // carrier comps need carrier+fighter ticked
 document.getElementById("advEnemy").innerHTML=ENEMY_TYPES.map(t=>"<label>"+t[1]+"<input type='number' min='0' step='1' value='0' data-t='"+t[0]+"'></label>").join("");
-document.getElementById("advHulls").innerHTML=OUR_HULLS.map(h=>"<label><input type='checkbox' data-h='"+h[0]+"'"+(h[2]?" checked":"")+"> "+h[1]+(ADVFLAG[h[0]]?" <span style='color:var(--muted)'>(~cost)</span>":"")+"</label>").join("");
+document.getElementById("advHulls").innerHTML=OUR_HULLS.map(h=>"<label><input type='checkbox' data-h='"+h[0]+"'"+(h[2]?" checked":"")+"> "+h[1]+"</label>").join("");
 const tick=()=>new Promise(r=>setTimeout(r,0));
 function advFleet(mix,mult){ const f={}; for(const k in mix){ const n=Math.ceil(mix[k]*mult); if(n>0)f[k]=n; } return f; }
 function advShips(f){ return Object.values(f).reduce((a,b)=>a+b,0); }
@@ -659,11 +675,24 @@ function advSuccess(fleet,enemy,role,sims){
   const ok=role==="attacker"?r.winRate.attacker:r.winRate.defender+r.winRate.draw;
   return {ok,r};
 }
+const SHIPAB=t=>t.replace("missile_cruiser","MC").replace("torpedo_frigate","TF").replace("battleship","BS").replace("buffed_fighter","F(buffed)").replace("fighter","F").replace("cruiser","Cru").replace("interceptor","Int").replace("bomber","Bmb").replace("carrier","Carrier");
 function advLoss(r,role){
   const side=role==="attacker"?r.attacker:r.defender;
-  const parts=side.rows.filter(x=>x.losses>0).map(x=>"\u2212"+x.losses+" "+x.typeId.replace("missile_cruiser","MC").replace("torpedo_frigate","TF").replace("battleship","BS").replace("fighter","F").replace("cruiser","Cru").replace("interceptor","Int").replace("bomber","Bmb"));
-  const val=side.rows.reduce((t,x)=>t+(ADVC[x.typeId]||0)*x.losses,0);
-  return {parts:parts.length?parts.join(", "):"none", val};
+  const parts=side.rows.filter(x=>x.losses>0).map(x=>"\u2212"+x.losses+" "+SHIPAB(x.typeId));
+  return parts.length?parts.join(", "):"none";
+}
+function advBill(fleet){
+  const bill={}; const unknown=[];
+  for(const [k,n] of Object.entries(fleet)){
+    const b=ADVBILL[k];
+    if(!b){ unknown.push(n+" "+SHIPAB(k)); continue; }
+    for(const [r,v] of Object.entries(b)) bill[r]=(bill[r]||0)+v*n;
+  }
+  const kf=v=>v>=1000?(v/1000).toFixed(v>=10000?0:1)+"k":String(v);
+  const parts=Object.entries(bill).filter(([,v])=>v>0).map(([r,v])=>kf(v)+" "+(RESAB[r]||r));
+  let out=parts.join(" \u00b7 ");
+  if(unknown.length) out+=(out?" ":"")+"(+ "+unknown.join(", ")+": bill unknown)";
+  return out||"unknown";
 }
 async function advise(){
   const enemy={};
@@ -675,7 +704,8 @@ async function advise(){
   const role=document.getElementById("advRole").value;
   const conf=+document.getElementById("advConf").value;
   const margin=+document.getElementById("advMargin").value;
-  const archs=ARCH.filter(a=>Object.keys(a[1]).every(h=>have.has(h)));
+  const canUse=h=>h==="buffed_fighter"?(have.has("carrier")&&have.has("fighter")):have.has(h);
+  const archs=ARCH.filter(a=>Object.keys(a[1]).every(canUse));
   if(!archs.length){ st.textContent="Tick at least one hull you can build."; return; }
   btn.disabled=true;
   const results=[];
@@ -704,10 +734,7 @@ async function advise(){
       const fin=advSuccess(fleet,enemy,role,300);
       await tick();
       if(fin.ok>=conf){
-        const cost=Object.entries(fleet).reduce((t,[k,n])=>t+(ADVC[k]||0)*n,0);
-        const approx=Object.keys(fleet).some(k=>ADVFLAG[k]);
-        const loss=advLoss(fin.r,role);
-        results.push({name,fleet,cost,approx,win:fin.ok,lossParts:loss.parts,lossVal:loss.val});
+        results.push({name,fleet,ships:advShips(fleet),bill:advBill(fleet),win:fin.ok,lossParts:advLoss(fin.r,role)});
       }
     }
   }
@@ -716,14 +743,14 @@ async function advise(){
     st.textContent="No tested composition reaches "+Math.round(conf*100)+"% within 4,000 ships \u2014 this enemy fleet is above counterable scale for your hull set (or only counterable by hulls you didn't tick).";
     return;
   }
-  results.sort((a,b)=>a.cost-b.cost);
-  st.textContent="Done \u2014 "+results.length+" viable counter(s), cheapest first. Sizes include your safety margin.";
-  out.innerHTML="<div class='tablewrap' style='max-width:1000px'><table><thead><tr><th></th><th>Composition</th><th>Fleet</th><th>Est. build cost</th><th>Win/hold</th><th>Your est. losses</th></tr></thead><tbody>"+
+  results.sort((a,b)=>a.ships-b.ships);
+  st.textContent="Done \u2014 "+results.length+" viable counter(s), smallest fleet first. Sizes include your safety margin.";
+  out.innerHTML="<div class='tablewrap'><table><thead><tr><th></th><th>Composition</th><th>Fleet</th><th>Ships</th><th>Resource bill</th><th>Win/hold</th><th>Your est. losses</th></tr></thead><tbody>"+
     results.map((x,i)=>"<tr"+(i===0?" class='advbest'":"")+"><td>"+(i+1)+"</td><td class='al'><b>"+esc(x.name)+"</b></td><td class='al'>"+
-      Object.entries(x.fleet).map(([k,n])=>n+" "+k.replace("missile_cruiser","MC").replace("torpedo_frigate","TF").replace("battleship","BS")).join(" + ")+
-      "</td><td>"+(x.approx?"~":"")+fmt(Math.round(x.cost))+"</td><td>"+(x.win*100).toFixed(0)+"%</td><td class='al'>"+x.lossParts+" <span style='color:var(--muted)'>(~"+fmt(Math.round(x.lossVal))+")</span></td></tr>").join("")+
+      Object.entries(x.fleet).map(([k,n])=>n+" "+SHIPAB(k)).join(" + ")+
+      "</td><td>"+x.ships+"</td><td class='al'>"+x.bill+"</td><td>"+(x.win*100).toFixed(0)+"%</td><td class='al'>"+x.lossParts+"</td></tr>").join("")+
     "</tbody></table></div>"+
-    "<p class='sub' style='margin-top:10px'>Costs with ~ use placeholder prices for still-locked hulls. \u201cYour est. losses\u201d = the value of YOUR ships the model expects to lose — but observed battle reports suggest real fights often resolve all-or-nothing (clean win or full wipe), so treat losses as a planning buffer, not a bill you'll definitely pay. "+(role==="defender"?"Defender numbers assume you keep the field on a draw.":"Attacker fleets must fully wipe the defenders inside the round cap.")+"</p>";
+    "<p class='sub' style='margin-top:10px'>Resource bills are the exact build-screen costs summed per hull — no market conversion; check them against your own production lanes. Bills for still-locked hulls (TF/Carrier/BS/Bomber) are unknown until their cost screens are captured. \u201cYour est. losses\u201d = YOUR ships the model expects to lose — observed reports suggest real fights often resolve all-or-nothing, so treat losses as a planning buffer. "+(role==="defender"?"Defender numbers assume you keep the field on a draw.":"Attacker fleets must fully wipe the defenders inside the round cap.")+"</p>";
 }
 document.getElementById("advGo").addEventListener("click",advise);
 function renderIntel(){

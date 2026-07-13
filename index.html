@@ -142,7 +142,7 @@
   </section>
 
   <section id="t-advisor">
-    <p class="sub">Enter the enemy fleet (from a spy report), tick the hulls you can build, and the advisor searches counter-compositions with the battle engine <b>running in your browser</b> — ranked by build cost. It recommends the <b>margined</b> fleet size, not the knife-edge minimum: sim counts are estimates (see Method), so the default adds +25%. Vanilla tech both sides. Carriers excluded (wing mechanics unmodeled).</p>
+    <p class="sub">Enter the enemy fleet (from a spy report), tick the hulls you can build, and the advisor searches counter-compositions with the battle engine <b>running in your browser</b> — ranked by build cost. It recommends the <b>margined</b> fleet size, not the knife-edge minimum: sim counts are estimates (see Method), so the default adds +25%. Vanilla tech both sides. Carriers excluded (wing mechanics unmodeled). <b>Costs cover the full resource bill</b> (ore, silicates, hydrogen, alloys, plasma cores) expressed in ore-equivalents at today's market cross-rates — re-priced with each daily update; ~ marks locked hulls with unconfirmed base costs.</p>
     <h3>Enemy fleet</h3>
     <div class="fgrid" id="advEnemy"></div>
     <h3>Your options</h3>
@@ -628,7 +628,7 @@ renderMarket();
 // ---- fleet advisor ----
 const E=window.__engine;
 const VANSIDE={commander:"none",tech:{}};
-const ADVC={scout:502,fighter:1673,interceptor:3619,torpedo_frigate:3500,cruiser:10178,missile_cruiser:17509,battleship:30000,bomber:20000};
+const ADVC={"scout":559,"fighter":1818,"interceptor":3866,"cruiser":9452,"missile_cruiser":15902,"torpedo_frigate":3500,"battleship":30000,"bomber":20000};
 const ADVFLAG={torpedo_frigate:"~",battleship:"~",bomber:"~"}; // placeholder costs
 const ENEMY_TYPES=[["scout","Scout"],["fighter","Fighter"],["interceptor","Interceptor"],["torpedo_frigate","Torp. Frigate"],["cruiser","Cruiser"],["carrier","Carrier"],["battleship","Battleship"],["missile_cruiser","Missile Cruiser"],["bomber","Bomber"],["dreadnought","Dreadnought"],["titan","Titan"]];
 const OUR_HULLS=[["fighter","Fighter",true],["interceptor","Interceptor",true],["cruiser","Cruiser",true],["missile_cruiser","Missile Cruiser",true],["torpedo_frigate","Torp. Frigate",false],["battleship","Battleship",false],["bomber","Bomber",false]];

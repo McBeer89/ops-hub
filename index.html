@@ -1828,9 +1828,19 @@ const CMAP={"heat":[{"x":-483,"y":-204,"n":1575,"s":"B20-7"},{"x":-97,"y":-29,"n
     g.strokeRect(sx(-EXT), sy(-EXT), w*S.scale, h*S.scale);
     // colonized-galaxy silhouette (same point source as the combat map) for
     // spatial reference — possible here because this IIFE sits after CMAP.
+    // Points brighten (theme-aware) and grow with zoom so the reference layer
+    // stays visible when zoomed in; off-canvas points skipped for speed.
     if(CMAP&&CMAP.galaxy){
-      g.fillStyle=cssVar("--line");
-      for(let i=0;i<CMAP.galaxy.length;i+=2) g.fillRect(sx(CMAP.galaxy[i]),sy(CMAP.galaxy[i+1]),1,1);
+      const dark=document.documentElement.dataset.theme!=="light";
+      g.fillStyle=dark?cssVar("--muted"):cssVar("--line");
+      g.globalAlpha=dark?.45:.8;
+      const ps=Math.max(1, Math.min(3, Math.sqrt(S.scale)));
+      for(let i=0;i<CMAP.galaxy.length;i+=2){
+        const X=sx(CMAP.galaxy[i]), Y=sy(CMAP.galaxy[i+1]);
+        if(X<-2||Y<-2||X>w+2||Y>h+2) continue;
+        g.fillRect(X,Y,ps,ps);
+      }
+      g.globalAlpha=1;
     }
     dots=[];
     const active=activeAlliances();
@@ -1901,9 +1911,17 @@ if(CMAP && document.getElementById("heatmap")){
     const S=hmPz.state, base=v=>(v+EXT)/(2*EXT)*w;
     const sx=v=>S.tx+base(v)*S.scale, sy=v=>S.ty+base(v)*S.scale;
     const dark=document.documentElement.dataset.theme!=="light";
-    // colonized-galaxy silhouette
-    g.fillStyle=cssVar("--line");
-    for(let i=0;i<CMAP.galaxy.length;i+=2) g.fillRect(sx(CMAP.galaxy[i]),sy(CMAP.galaxy[i+1]),1,1);
+    // colonized-galaxy silhouette — brightened + zoom-scaled to match the
+    // intel planet map's reference layer
+    g.fillStyle=dark?cssVar("--muted"):cssVar("--line");
+    g.globalAlpha=dark?.45:.8;
+    const gps=Math.max(1, Math.min(3, Math.sqrt(S.scale)));
+    for(let i=0;i<CMAP.galaxy.length;i+=2){
+      const GX=sx(CMAP.galaxy[i]), GY=sy(CMAP.galaxy[i+1]);
+      if(GX<-2||GY<-2||GX>w+2||GY>h+2) continue;
+      g.fillRect(GX,GY,gps,gps);
+    }
+    g.globalAlpha=1;
     // sequential amber ramp (low -> high), per theme
     const ramp=dark?["#4A3312","#7A4F14","#A9741F","#D89A3C","#FFC46B"]
                    :["#F2D8A7","#DDA95A","#C97F1D","#8F5510","#5A3407"];
